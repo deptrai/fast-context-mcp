@@ -7,7 +7,11 @@ node_modules/
 
 # Local docs (not for distribution)
 localdocs/
-
+_bmad/
+_bmad-ouput/
+.agents
+.claude
+.kiro
 # Legacy Python artifacts
 __pycache__/
 *.pyc

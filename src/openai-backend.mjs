@@ -19,6 +19,7 @@ import {
   FINAL_FORCE_ANSWER_OPENAI,
   buildOpenAIPrompt,
 } from "./shared.mjs";
+import { buildCacheKey, getCachedResult, setCachedResult } from "./cache.mjs";
 
 // ─── Config ────────────────────────────────────────────────
 
@@ -189,6 +190,14 @@ export async function searchOpenAI({
 
   const { tree: repoTree, depth: actualDepth, sizeBytes: treeSizeBytes, fellBack } = getRepoMap(projectRoot, treeDepth, excludePaths);
 
+  // Cache check
+  const cacheKey = buildCacheKey({ query, model: _getOpenAIModel(), maxTurns, maxResults, treeDepth, repoMapHash: repoTree });
+  const cached = getCachedResult(cacheKey);
+  if (cached) {
+    log?.("[openai] Cache hit");
+    return { ...cached, _meta: { ...cached._meta, cache_hit: true } };
+  }
+
   log?.(`[openai] Repo map: tree -L ${actualDepth} (${(treeSizeBytes / 1024).toFixed(1)}KB), model=${_getOpenAIModel()}`);
 
   const userContent = `Problem Statement: ${query}\n\nRepo Map (tree -L ${actualDepth} /codebase):\n\`\`\`text\n${repoTree}\n\`\`\``;
@@ -263,7 +272,8 @@ export async function searchOpenAI({
           log?.("[openai] Received final answer");
           const result = _parseAnswer(answerXml, projectRoot);
           result.rg_patterns = [...new Set(executor.collectedRgPatterns)];
-          result._meta = { treeDepth: actualDepth, treeSizeKB: +(treeSizeBytes / 1024).toFixed(1), fellBack, backend: "openai", model: _getOpenAIModel() };
+          result._meta = { treeDepth: actualDepth, treeSizeKB: +(treeSizeBytes / 1024).toFixed(1), fellBack, backend: "openai", model: _getOpenAIModel(), cache_hit: false };
+          setCachedResult(cacheKey, result);
           return result;
         }
 
@@ -287,7 +297,8 @@ export async function searchOpenAI({
         log?.("[openai] Received inline answer");
         const result = _parseAnswer(content, projectRoot);
         result.rg_patterns = [...new Set(executor.collectedRgPatterns)];
-        result._meta = { treeDepth: actualDepth, treeSizeKB: +(treeSizeBytes / 1024).toFixed(1), fellBack, backend: "openai", model: _getOpenAIModel() };
+        result._meta = { treeDepth: actualDepth, treeSizeKB: +(treeSizeBytes / 1024).toFixed(1), fellBack, backend: "openai", model: _getOpenAIModel(), cache_hit: false };
+        setCachedResult(cacheKey, result);
         return result;
       }
 

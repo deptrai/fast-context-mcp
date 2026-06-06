@@ -20,6 +20,7 @@ import { z } from "zod";
 
 import { searchWithContent, extractKeyInfo } from "./core.mjs";
 import { isOpenAIBackendConfigured, searchOpenAI } from "./openai-backend.mjs";
+import { readSnippets } from "./snippets.mjs";
 
 /**
  * Parse an integer env var with optional clamping.
@@ -67,7 +68,7 @@ const server = new McpServer({
 /**
  * Format search result object into text output.
  */
-function _formatResult(result, maxTurns, maxResults, maxCommands, timeoutMs, excludePaths) {
+function _formatResult(result, maxTurns, maxResults, maxCommands, timeoutMs, excludePaths, includeSnippets = false) {
   if (result.error) {
     const meta = result._meta || {};
     let errMsg = `Error: ${result.error}`;
@@ -98,6 +99,25 @@ function _formatResult(result, maxTurns, maxResults, maxCommands, timeoutMs, exc
     }
   } else {
     parts.push("No files found.");
+  }
+
+  // Append code snippets if requested
+  if (includeSnippets && files.length) {
+    const snippetMap = readSnippets(files);
+    if (snippetMap.size) {
+      parts.push("");
+      parts.push("--- Code Snippets ---");
+      for (const file of files) {
+        const snippet = snippetMap.get(file.full_path);
+        if (snippet) {
+          parts.push("");
+          parts.push(`## ${file.path}`);
+          parts.push("```");
+          parts.push(snippet);
+          parts.push("```");
+        }
+      }
+    }
   }
 
   if (uniquePatterns.length) {
@@ -179,8 +199,15 @@ server.tool(
         "Useful for reducing payload size on large repos. " +
         "Examples: ['node_modules', 'dist', '.git', 'build', 'coverage', '*.min.*']"
       ),
+    include_snippets: z
+      .boolean()
+      .default(false)
+      .describe(
+        "If true, include actual code snippets for each file's line ranges in the output. " +
+        "Default false (file paths + ranges only)."
+      ),
   },
-  async ({ query, project_path, tree_depth, max_turns, max_results, exclude_paths }) => {
+  async ({ query, project_path, tree_depth, max_turns, max_results, exclude_paths, include_snippets }) => {
     let projectPath = project_path || process.cwd();
 
     try {
@@ -204,6 +231,7 @@ server.tool(
         treeDepth: tree_depth,
         timeoutMs: TIMEOUT_MS,
         excludePaths: exclude_paths,
+        includeSnippets: include_snippets,
       });
       return { content: [{ type: "text", text }] };
     } catch (e) {
@@ -262,8 +290,12 @@ server.tool(
       .array(z.string())
       .default([])
       .describe("Patterns to exclude (e.g. ['node_modules', 'dist', '.git'])"),
+    include_snippets: z
+      .boolean()
+      .default(false)
+      .describe("If true, include code snippets for each file's line ranges."),
   },
-  async ({ query, project_path, tree_depth, max_results, exclude_paths }) => {
+  async ({ query, project_path, tree_depth, max_results, exclude_paths, include_snippets }) => {
     if (!DEEP_BASE_URL || !DEEP_API_KEY) {
       return { content: [{ type: "text", text: "Error: deep_context_search not configured. Set FC_DEEP_BASE_URL and FC_DEEP_API_KEY env vars." }] };
     }
@@ -297,7 +329,7 @@ server.tool(
         timeoutMs: 90000,
         excludePaths: exclude_paths.length ? exclude_paths : ["node_modules", "dist", ".git", "build", ".next"],
       });
-      return { content: [{ type: "text", text: _formatResult(result, 3, max_results, MAX_COMMANDS, 90000, exclude_paths) }] };
+      return { content: [{ type: "text", text: _formatResult(result, 3, max_results, MAX_COMMANDS, 90000, exclude_paths, include_snippets) }] };
     } catch (e) {
       return { content: [{ type: "text", text: `Error [deep]: ${e.message}` }] };
     } finally {

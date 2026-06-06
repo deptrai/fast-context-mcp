@@ -30,6 +30,8 @@ import {
   FINAL_FORCE_ANSWER,
   buildWindsurfPrompt,
 } from "./shared.mjs";
+import { buildCacheKey, getCachedResult, setCachedResult } from "./cache.mjs";
+import { readSnippets } from "./snippets.mjs";
 
 // ─── Error Classification ──────────────────────────────────
 
@@ -736,6 +738,15 @@ export async function search({
 
   const { tree: repoMap, depth: actualDepth, sizeBytes: treeSizeBytes, fellBack } = getRepoMap(projectRoot, treeDepth, excludePaths);
   log(`Repo map: tree -L ${actualDepth} (${(treeSizeBytes / 1024).toFixed(1)}KB)${fellBack ? ` [fell back from L=${treeDepth}]` : ""}`);
+
+  // Cache check
+  const cacheKey = buildCacheKey({ query, model: WS_MODEL, maxTurns, maxResults, treeDepth, repoMapHash: repoMap });
+  const cached = getCachedResult(cacheKey);
+  if (cached) {
+    log("Cache hit");
+    return { ...cached, _meta: { ...cached._meta, cache_hit: true } };
+  }
+
   const userContent = `Problem Statement: ${query}\n\nRepo Map (tree -L ${actualDepth} /codebase):\n\`\`\`text\n${repoMap}\n\`\`\``;
 
   const messages = [
@@ -800,7 +811,8 @@ export async function search({
       log("Received final answer");
       const result = _parseAnswer(answerXml, projectRoot);
       result.rg_patterns = [...new Set(executor.collectedRgPatterns)];
-      result._meta = { treeDepth: actualDepth, treeSizeKB: +(treeSizeBytes / 1024).toFixed(1), fellBack };
+      result._meta = { treeDepth: actualDepth, treeSizeKB: +(treeSizeBytes / 1024).toFixed(1), fellBack, cache_hit: false };
+      setCachedResult(cacheKey, result);
       return result;
     }
 
@@ -879,6 +891,7 @@ export async function searchWithContent({
   treeDepth = 3,
   timeoutMs = 30000,
   excludePaths = [],
+  includeSnippets = false,
 }) {
   const result = await search({ query, projectRoot, apiKey, maxTurns, maxCommands, maxResults, treeDepth, timeoutMs, excludePaths });
 
@@ -929,6 +942,25 @@ export async function searchWithContent({
     }
   } else {
     parts.push("No files found.");
+  }
+
+  // Append code snippets if requested
+  if (includeSnippets && files.length) {
+    const snippetMap = readSnippets(files);
+    if (snippetMap.size) {
+      parts.push("");
+      parts.push("--- Code Snippets ---");
+      for (const file of files) {
+        const snippet = snippetMap.get(file.full_path);
+        if (snippet) {
+          parts.push("");
+          parts.push(`## ${file.path}`);
+          parts.push("```");
+          parts.push(snippet);
+          parts.push("```");
+        }
+      }
+    }
   }
 
   if (uniquePatterns.length) {
