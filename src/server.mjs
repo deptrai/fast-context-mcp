@@ -130,6 +130,7 @@ function _formatResult(result, maxTurns, maxResults, maxCommands, timeoutMs, exc
     parts.push("");
     let configLine = `[config] backend=${meta.backend || "windsurf"}, model=${meta.model || "SWE-1.6"}, tree_depth=${meta.treeDepth}${fbNote}, tree_size=${meta.treeSizeKB}KB, max_turns=${maxTurns}`;
     if (excludePaths.length) configLine += `, exclude_paths=[${excludePaths.join(", ")}]`;
+    if (meta.cache_hit) configLine += `, cache_hit=true`;
     parts.push(configLine);
   }
 

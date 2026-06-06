@@ -30,7 +30,7 @@ import {
   FINAL_FORCE_ANSWER,
   buildWindsurfPrompt,
 } from "./shared.mjs";
-import { buildCacheKey, getCachedResult, setCachedResult } from "./cache.mjs";
+import { buildCacheKey, getCachedResult, setCachedResult, computeMtimeHash } from "./cache.mjs";
 import { readSnippets } from "./snippets.mjs";
 
 // ─── Error Classification ──────────────────────────────────
@@ -739,8 +739,9 @@ export async function search({
   const { tree: repoMap, depth: actualDepth, sizeBytes: treeSizeBytes, fellBack } = getRepoMap(projectRoot, treeDepth, excludePaths);
   log(`Repo map: tree -L ${actualDepth} (${(treeSizeBytes / 1024).toFixed(1)}KB)${fellBack ? ` [fell back from L=${treeDepth}]` : ""}`);
 
-  // Cache check
-  const cacheKey = buildCacheKey({ query, model: WS_MODEL, maxTurns, maxResults, treeDepth, repoMapHash: repoMap });
+  // Cache check (mtimeHash detects file CONTENT changes the tree string misses)
+  const mtimeHash = computeMtimeHash(projectRoot, excludePaths);
+  const cacheKey = buildCacheKey({ query, model: WS_MODEL, maxTurns, maxResults, treeDepth, repoMapHash: repoMap, mtimeHash, excludePaths });
   const cached = getCachedResult(cacheKey);
   if (cached) {
     log("Cache hit");
@@ -975,6 +976,7 @@ export async function searchWithContent({
     parts.push("");
     let configLine = `[config] tree_depth=${meta.treeDepth}${fbNote}, tree_size=${meta.treeSizeKB}KB, max_turns=${maxTurns}, max_results=${maxResults}, timeout_ms=${timeoutMs}`;
     if (excludePaths.length) configLine += `, exclude_paths=[${excludePaths.join(", ")}]`;
+    if (meta.cache_hit) configLine += `, cache_hit=true`;
     parts.push(configLine);
   }
 

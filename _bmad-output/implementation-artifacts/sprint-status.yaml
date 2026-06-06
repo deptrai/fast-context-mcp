@@ -15,7 +15,7 @@ development_status:
   1-tech-debt-refactor: done
 
   # Story 2 — Enhancement: result caching + optional code snippets
-  2-search-enhancement: review
+  2-search-enhancement: done
 
   # Story 3 — Resilience: test suite + TLS hardening + unified backend interface
   3-resilience-architecture: ready-for-dev

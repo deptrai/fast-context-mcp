@@ -19,7 +19,7 @@ import {
   FINAL_FORCE_ANSWER_OPENAI,
   buildOpenAIPrompt,
 } from "./shared.mjs";
-import { buildCacheKey, getCachedResult, setCachedResult } from "./cache.mjs";
+import { buildCacheKey, getCachedResult, setCachedResult, computeMtimeHash } from "./cache.mjs";
 
 // ─── Config ────────────────────────────────────────────────
 
@@ -190,8 +190,9 @@ export async function searchOpenAI({
 
   const { tree: repoTree, depth: actualDepth, sizeBytes: treeSizeBytes, fellBack } = getRepoMap(projectRoot, treeDepth, excludePaths);
 
-  // Cache check
-  const cacheKey = buildCacheKey({ query, model: _getOpenAIModel(), maxTurns, maxResults, treeDepth, repoMapHash: repoTree });
+  // Cache check (mtimeHash detects file CONTENT changes the tree string misses)
+  const mtimeHash = computeMtimeHash(projectRoot, excludePaths);
+  const cacheKey = buildCacheKey({ query, model: _getOpenAIModel(), maxTurns, maxResults, treeDepth, repoMapHash: repoTree, mtimeHash, excludePaths });
   const cached = getCachedResult(cacheKey);
   if (cached) {
     log?.("[openai] Cache hit");

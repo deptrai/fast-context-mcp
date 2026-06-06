@@ -4,7 +4,7 @@ baseline_commit: 6bd9dea85c6f38b4a4baa149fba56132b27f3a3f
 
 # Story 2: Search Enhancement — Caching & Code Snippets
 
-Status: review
+Status: done
 
 ## Story
 
@@ -51,6 +51,21 @@ so that I save time/tokens and avoid extra round-trips reading files.
 - [x] **T6. Format output** — cập nhật `_formatResult` (server.mjs) và `searchWithContent` (core.mjs) để render snippet dưới mỗi file entry khi enabled.
 - [x] **T7. Verify** — test caching round-trip + test snippet output.
 
+### Review Findings
+
+_Code review (2026-06-06) — Acceptance Auditor + Edge Case Hunter (Blind Hunter layer failed/empty). Auditor verdict: AC1=FAIL, AC2=FAIL, AC3=PASS, AC4=PASS, AC5=PASS. 1 decision-needed, 5 patch, 2 defer, ~4 dismissed. **Decision resolved (option 1: fix per ADR-4); all 6 patches APPLIED & verified (9/9 unit + MCP E2E).**_
+
+- [x] [Review][Decision→Patch] AC2 — cache does NOT invalidate on file content change [src/cache.mjs, src/core.mjs, src/openai-backend.mjs] → **FIXED**. Added `computeMtimeHash(projectRoot, excludePaths)` (walks files, aggregates mtime+size, capped 5000 files) folded into the cache key. Verified: editing file content changes the key → cache miss.
+
+- [x] [Review][Patch] AC1 — cache_hit not surfaced in tool output → **FIXED**. Renders `cache_hit=true` in the [config] line of both core.mjs (searchWithContent) and server.mjs (_formatResult), only when true (preserves AC5). MCP E2E confirmed: 2nd identical query shows cache_hit=true.
+- [x] [Review][Patch] Snippet output unsafe: binary files + missing per-line char cap → **FIXED**. snippets.mjs now detects binary (NUL byte) → "[binary file — snippet omitted]"; applies FC_LINE_MAX_CHARS (default 250) per-line cap.
+- [x] [Review][Patch] Unbounded cache growth → **FIXED**. cache.mjs evicts oldest entry when at FC_CACHE_MAX_ENTRIES (default 200).
+- [x] [Review][Patch] Env var parsing edge cases → **FIXED**. FC_CACHE_TTL_MS<=0 now disables cache; FC_CACHE_DISABLED accepts 1/true/yes/on (case-insensitive).
+- [x] [Review][Patch] Snippet truncation marker + cache key omits excludePaths → **FIXED**. Added "[range truncated]" marker when budget reached; excludePaths folded into cache key (sorted).
+
+- [x] [Review][Defer] Cache returns shared mutable object references [src/cache.mjs getCachedResult] — deferred, latent (no current mutator; future in-place edits would poison cache)
+- [x] [Review][Defer] Large file fully read before slicing [src/snippets.mjs:29] — deferred, perf-only (budget bounds output not input)
+
 ## Dev Notes
 
 - **Cache placement:** Sau Story 1 (shared.mjs tồn tại), cache helper đặt riêng `src/cache.mjs` cho sạch.
@@ -88,3 +103,4 @@ Auto (Claude via Kiro CLI)
 
 ## Change Log
 - 2026-06-06: Story 2 Search Enhancement implemented — added result caching (in-memory, TTL, configurable) and optional code snippets (include_snippets param, FC_SNIPPET_MAX_LINES). Backward compatible (default: snippets off, cache on).
+- 2026-06-06: Code review — resolved 1 decision + 5 patches (best practice): AC2 mtime-aggregate cache key (computeMtimeHash), AC1 cache_hit rendered in output, snippet binary guard + per-line char cap, cache size cap, env var hardening, truncation marker + excludePaths in key. 2 deferred (see deferred-work.md). Verified 9/9 unit + MCP E2E. Status → done.

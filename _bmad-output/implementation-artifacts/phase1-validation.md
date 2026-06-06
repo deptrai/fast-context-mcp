@@ -1,154 +1,311 @@
-# Phase 1: Validation MVP — Ship to learn, not to perfect
+# Phase 1: deepgrep — Validation MVP
 
-**Mục tiêu DUY NHẤT:** Trong 2 tuần, biết được "có người lạ trả tiền không?"
-**Thành công = 1 user lạ trả $5+** (không phải downloads, không phải stars)
-**Timeline:** 3 ngày build + 11 ngày học từ user thật
+**Product:** `deepgrep` — AI code search that THINKS, not just matches.
+**Tagline:** "Zero-index semantic code search for AI agents"
+**npm:** `deepgrep` (confirmed available)
+**Timeline:** 3 ngày build + 11 ngày validate
+**Success = 1 người lạ trả $15**
+
+---
+
+## Positioning (học từ ai-grep + differentiation)
+
+### The Problem (giữ framing của ai-grep — nó đúng)
+
+> AI agents (Claude Code, Kiro, Codex) waste tokens grepping blindly.
+> grep "auth" → 200 matches → agent reads 10 files → still lost.
+> 22 tool calls. $0.56 in tokens. 58 seconds.
+
+### Our Solution (khác biệt rõ ràng vs ai-grep)
+
+> **deepgrep** thinks like a developer — not just matches keywords.
+> It asks an AI to reason about your codebase, grep strategically, and trace logic across files.
+>
+> 1 query → precise file + line ranges → done.
+> Zero index. Zero setup. Zero daemon. Just `npx deepgrep`.
+
+### Competitive table (for landing page + README)
+
+| | grep/ripgrep | ai-grep | **deepgrep** |
+|---|---|---|---|
+| Setup | None | Install Rust + 800MB models + daemon | **`npx deepgrep`** |
+| Understands meaning | ❌ | ✅ (embedding match) | ✅ (**AI reasoning**) |
+| Multi-hop tracing | ❌ | ❌ | ✅ ("trace data flow from X → Y → Z") |
+| Needs index | No | Yes (per project) | **No** |
+| Works offline | ✅ | ✅ | Fast mode: ✅, Deep mode: needs API |
+| Accuracy (complex queries) | Low | Medium | **High (100% benchmark)** |
+| Cost | Free | Free | Fast: free / Deep: $15/mo |
+| MCP support | ❌ | ✅ | ✅ |
 
 ---
 
 ## Nguyên tắc chỉ đạo
 
-1. **KHÔNG build tính năng mới.** Tool hiện tại đủ để validate.
-2. **Paywall từ ngày 1.** Deep mode = paid. Phải đo willingness-to-pay.
-3. **Đo mọi thứ.** Signup, activation, payment — không đo = bay mù.
-4. **Manual OK.** Tuần đầu issue key bằng tay cũng được. Đừng over-engineer.
+1. **KHÔNG build tính năng mới.** Ship cái có. Validate demand.
+2. **Paywall từ ngày 1.** Deep mode = paid. Cần biết willingness-to-pay.
+3. **Zero-friction install** — `npx deepgrep` → chạy ngay. Không daemon, không model download.
+4. **Đo mọi thứ.** Signup → activation → payment.
 
 ---
 
-## Ngày 1: Tool + Tracking foundation
+## Ngày 1: Package + Gating
 
-### Task 1.1: Fork + rebrand package
-- Package: `@chainlens/code-search` (org bạn own)
-- Version: `1.0.0`
-- Repo mới private: `deptrai/chainlens-code-search`
-- Loại bỏ file internal khỏi published: `9ROUTER_BUG_REPORT.md`, `SONNET_4.6_ISSUES.md`, `_bmad-output/`
+### Task 1.1: Create new package
 
-### Task 1.2: Config + gating
-- `FC_DEEP_BASE_URL` default = `https://router.chainlens.net/v1`
-- Deep mode KHÔNG có key → trả message signup (không crash):
-  ```
-  ⚡ Deep search requires an API key.
-  Get yours free: https://codesearch.chainlens.net
-  Set: FC_DEEP_API_KEY=your-key
-  💡 fast_context_search works free without a key.
-  ```
-- Fast mode (SWE-1.6) vẫn free, không cần key → tạo "aha moment" ngay
-
-### Task 1.3: Telemetry (QUAN TRỌNG — validation cốt lõi)
-Thêm tracking tối thiểu, privacy-respecting:
-- **Mỗi deep query** → 9router đã log (key, timestamp, model). Đảm bảo log đủ: key_id, query_count, success/fail.
-- **Tool-side ping (opt-in, anonymous):** khi user chạy lần đầu, gửi 1 event ẩn danh `{event: "install", version, os}` về 1 endpoint đơn giản. CÓ disclaimer trong README + env `FC_NO_TELEMETRY=1` để tắt.
-- Mục đích: biết bao nhiêu install thật vs bao nhiêu dùng deep (conversion funnel).
-
----
-
-## Ngày 2: Signup + Payment
-
-### Task 2.1: Landing page (1 trang, đo được)
-Stack nhanh nhất: Vercel + Next.js hoặc static + form. Phải có:
-- Hero + demo GIF (fast search trong Kiro)
-- Pricing: **Free** (fast unlimited + 10 deep/ngày) / **Pro $15/mo** (deep unlimited)
-- "Get Free Key" → signup
-- MCP config snippet (copy button)
-- **Analytics:** Plausible/Umami (privacy-friendly) hoặc PostHog (free tier) → đo visit, click, signup
-
-### Task 2.2: Signup flow
-**MVP option A (tự động):**
+```json
+{
+  "name": "deepgrep",
+  "version": "1.0.0",
+  "description": "AI code search that thinks — zero-index semantic search for any MCP client",
+  "type": "module",
+  "main": "src/server.mjs",
+  "bin": { "deepgrep": "src/server.mjs" },
+  "files": ["src/", "README.md", "LICENSE"],
+  "keywords": ["mcp", "code-search", "semantic-search", "ai", "grep", "deepgrep", "claude", "cursor", "kiro"],
+  "license": "MIT"
+}
 ```
-POST /api/signup { email } → tạo key fc-free-xxx trong 9router → email key
+
+- Repo: `deptrai/deepgrep` (private)
+- Copy source từ fast-context-mcp (bỏ _bmad-output, bug reports, diagnostic files)
+- Loại bỏ `@sammysnake` references
+- Giữ bin name `deepgrep`
+
+### Task 1.2: Deep mode gating
+
+Sửa `src/server.mjs`:
+
+```javascript
+const DEEP_BASE_URL = process.env.DEEPGREP_API_URL || "https://api.deepgrep.dev/v1";
+const DEEP_API_KEY = process.env.DEEPGREP_API_KEY || "";
+const DEEP_MODEL = process.env.DEEPGREP_MODEL || "deep-search";
 ```
-**MVP option B (manual, tuần 1):**
-- Tally/Typeform form → bạn nhận email → generate key thủ công → reply
-- Đủ cho 20-50 user đầu. Đừng build auth system phức tạp vội.
 
-### Task 2.3: Stripe payment
-- Stripe Payment Link (KHÔNG cần code) cho Pro $15/mo
-- User trả → Stripe webhook hoặc bạn manual → upgrade key `fc-free-*` → `fc-pro-*`
-- Tuần 1 manual upgrade OK. Tự động hoá khi có >5 paying users.
+Khi không có key:
+```
+⚡ Deep search requires an API key.
 
-### Task 2.4: Tier enforcement trên 9router
-- `fc-free-*`: 10 deep queries/ngày (rate limit đã có)
-- `fc-pro-*`: unlimited (hoặc 2000/ngày safety cap)
-- Khi free hết quota → 429 → tool hiển thị: "Daily free limit reached. Upgrade: [link]"
+Get yours free (includes 10 deep queries/day):
+  → https://deepgrep.dev
+
+Then add to your MCP config:
+  "env": { "DEEPGREP_API_KEY": "your-key" }
+
+💡 Tip: fast mode (deepgrep_search) works free without a key.
+```
+
+### Task 1.3: Rename tools cho brand
+
+| Cũ | Mới | Lý do |
+|---|---|---|
+| `fast_context_search` | `deepgrep_search` | Brand-first, gợi nhớ |
+| `deep_context_search` | `deepgrep_deep` | Rõ ràng: deep = paid tier |
+| `extract_windsurf_key` | Bỏ hoặc hide | User không cần biết internals |
+
+### Task 1.4: Telemetry (anonymous, opt-out)
+
+Khi tool khởi động lần đầu:
+- Gửi 1 event: `{event: "install", version, os, node_version}` → endpoint đơn giản
+- `DEEPGREP_NO_TELEMETRY=1` để tắt
+- Ghi rõ trong README
+
+Khi chạy deep query:
+- 9router log đã track: key_id, timestamp, model, success/fail → đủ
 
 ---
 
-## Ngày 3: Publish + Launch prep
+## Ngày 2: Signup + Payment + Domain
+
+### Task 2.1: Domain + Landing
+
+**Domain:** `deepgrep.dev` (hoặc `.io` nếu `.dev` bị chiếm — check)
+
+**Landing page (1 trang, Vercel/static):**
+
+```
+HERO:
+"AI code search that thinks — not just matches"
+Subline: "Zero-index. Zero-setup. Just npx deepgrep."
+
+DEMO GIF: Kiro/Claude asking "trace the auth flow" → precise results
+
+3-STEP SETUP:
+1. npx deepgrep (or add to MCP config)
+2. Get free API key (10 deep queries/day)
+3. Ask your codebase anything
+
+COMPARISON TABLE (grep vs ai-grep vs deepgrep)
+
+PRICING:
+Free: fast mode unlimited + 10 deep/day
+Pro $15/mo: unlimited deep, priority models
+
+"Get Free API Key" → signup form
+
+FOOTER: "Powered by frontier AI models. Your code never leaves your machine."
+```
+
+**Analytics:** Plausible hoặc PostHog (privacy-friendly)
+
+### Task 2.2: Signup flow (MVP)
+
+**Tuần 1 — manual (đủ cho <50 users):**
+- Tally form: email + IDE dùng
+- Bạn generate key thủ công trong 9router dashboard
+- Email key cho user (template có sẵn)
+
+**Tuần 2+ — tự động (khi >50 signups):**
+- `POST /api/signup {email}` → auto-generate key → email
+
+### Task 2.3: Stripe
+
+- Stripe Payment Link: `$15/mo` subscription
+- Landing page link "Upgrade to Pro"
+- Khi paid → manual upgrade key tier (tuần 1). Auto webhook later.
+
+### Task 2.4: 9router tier enforcement
+
+- Free key prefix `dg-free-*`: 10 deep requests/ngày
+- Pro key prefix `dg-pro-*`: unlimited (5000/day safety)
+- Hết quota → 429 + message: "Daily free limit reached. Upgrade: https://deepgrep.dev/pro"
+
+---
+
+## Ngày 3: Publish + Launch
 
 ### Task 3.1: Publish npm
+
 ```bash
-npm publish --access public
-npx @chainlens/code-search  # test
+npm publish  # → deepgrep@1.0.0 on registry
+npx deepgrep  # verify it starts
 ```
 
-### Task 3.2: Pre-launch checklist
-- [ ] Fast mode work không cần key (aha moment)
-- [ ] Deep mode không key → signup message rõ ràng
-- [ ] Free key: 10 deep/ngày, hết → upgrade prompt
-- [ ] Pro key: unlimited
-- [ ] Landing page live + analytics chạy
-- [ ] Signup → nhận key (auto hoặc manual)
-- [ ] Stripe link → upgrade hoạt động
-- [ ] README 30s setup cho Kiro/Claude/Cursor
+### Task 3.2: README marketing (trong package — users đọc trên npmjs.com)
 
-### Task 3.3: Launch posts (chuẩn bị sẵn)
-Viết sẵn 3-4 posts, đăng rải trong tuần:
-- **Reddit:** r/ChatGPTCoding, r/LocalLLaMA, r/cursor — "I built a free AI code search MCP tool"
-- **X/Twitter:** dev/MCP community, tag liên quan
-- **Discord:** MCP server community, Cursor, Claude dev servers
-- **Hacker News:** Show HN (nếu đủ tự tin về polish)
-- Tone: chia sẻ giá trị, không spam bán hàng. Free tier là hook.
+```markdown
+# deepgrep
 
----
+AI code search that **thinks** — not just matches keywords.
 
-## Tuần 2: HỌC TỪ USER THẬT (quan trọng hơn build)
+> "trace the authentication flow" → precise files + line ranges in 3 seconds.
+> Zero index. Zero setup. Works with Kiro, Claude Code, Cursor, Codex.
 
-### Metrics dashboard (theo dõi hàng ngày)
-| Metric | Nguồn | Câu hỏi trả lời |
-|--------|-------|-----------------|
-| Landing visits | Analytics | Người ta có quan tâm? |
-| Signup rate | Signup count / visits | Value prop có rõ? |
-| Install → first deep query | Telemetry + 9router log | Onboarding có work? |
-| Free → Pro conversion | Stripe | Có ai trả tiền?? ← QUAN TRỌNG NHẤT |
-| Daily active (deep queries) | 9router log | Có ai dùng lại? (retention) |
+## Quick Start (30s)
 
-### Talk to users (5-10 cuộc)
-- Mỗi signup → email cá nhân hỏi: dùng IDE gì, tìm gì, có hữu ích không, sẵn sàng trả bao nhiêu
-- Cuộc nói chuyện > mọi giả định. Đây là gold.
+### Any MCP client (Kiro, Claude Desktop, Cursor)
+{
+  "deepgrep": {
+    "command": "npx",
+    "args": ["-y", "deepgrep"],
+    "env": { "DEEPGREP_API_KEY": "your-key" }
+  }
+}
 
----
+Get your free key: https://deepgrep.dev
 
-## Decision Gate cuối tuần 2
+## How It Works
+Unlike embedding-based tools (need indexing, daemon, 800MB models),
+deepgrep uses AI reasoning: it reads your project structure, greps
+strategically, traces logic across files, and returns precise results.
 
-| Kết quả | Ý nghĩa | Hành động |
-|---------|---------|-----------|
-| ≥3 người lạ trả tiền | Có signal! | Tiếp tục, optimize funnel |
-| Nhiều signup, 0 trả tiền | Value chưa đủ / giá sai | Điều chỉnh pricing/positioning |
-| Ít signup | Marketing/positioning sai | Đổi messaging, thử kênh khác |
-| Gần như 0 mọi thứ | Thị trường yếu | Cân nhắc pivot |
+Your code stays on YOUR machine. Only the search query goes to our API.
 
----
+## Two Modes
+| Mode | Speed | Use case | Cost |
+|------|-------|----------|------|
+| `deepgrep_search` | ~3s | Quick lookups | Free (no key needed) |
+| `deepgrep_deep` | ~20s | Complex tracing, architecture questions | API key (free tier: 10/day) |
 
-## KHÔNG làm trong Phase 1 (chống over-engineering)
+## Pricing
+- Free: fast unlimited + 10 deep/day
+- Pro ($15/mo): unlimited deep
+```
 
-- ❌ Context Engine, embedding index, dependency graph
-- ❌ Full auth system (manual key issuance OK)
-- ❌ Dashboard phức tạp (Stripe + 9router log đủ)
-- ❌ Multi-repo, GitHub integration
-- ❌ Tự động hoá mọi thứ (manual đến khi đau mới tự động hoá)
+### Task 3.3: Launch posts (chuẩn bị sẵn, đăng rải trong tuần)
 
----
+**Reddit (r/ChatGPTCoding, r/cursor, r/ClaudeAI):**
+> Title: "I built a free semantic code search for AI agents — works with Claude Code, Cursor, Kiro"
+> Body: Problem (agents waste tokens grepping) → solution (AI that thinks) → comparison table → how to try (npx deepgrep)
+> Tone: sharing value, not selling
 
-## Rủi ro pháp lý cần xử TRƯỚC khi nhận tiền
+**X/Twitter:**
+> "grep finds strings. deepgrep finds meaning.
+> AI code search that traces logic across your entire codebase — zero index, zero setup.
+> Free: npx deepgrep
+> [demo gif]"
 
-- [ ] Xác nhận quyền resell các model qua chainlens.net (ToS upstream — kr/cx providers)
-- [ ] Windsurf SWE-1.6 free mode: nếu rủi ro ToS cao → đổi fast mode sang Haiku qua router
-- [ ] Terms of Service + Privacy Policy đơn giản trên landing (telemetry disclosure)
-- [ ] Cost model: đảm bảo không lỗ mỗi deep query sau khi trừ chi phí model
+**HN (Show HN):**
+> Title: "Show HN: deepgrep – AI semantic code search for any MCP client (no index needed)"
+> Focus on: technical approach (agentic loop vs embeddings), zero-setup DX, benchmarks
 
 ---
 
-## Tổng kết
+## Tuần 2: LEARN
 
-**Tuần này KHÔNG phải về code đẹp. Về 1 câu hỏi: có ai trả tiền?**
-Ship nhanh, đo kỹ, nói chuyện với user, để dữ liệu quyết định side-income vs startup.
+### Metrics (theo dõi hàng ngày)
+
+| Metric | Source | Trả lời |
+|--------|--------|---------|
+| Landing visits | Plausible | Posts có viral? |
+| Signup count | Form submissions | Có ai muốn thử? |
+| npm installs/week | npmjs.com stats | Có ai dùng? |
+| First deep query | 9router logs | Activation OK? |
+| Free → Pro conversion | Stripe | **CÓ AI TRẢ TIỀN?** |
+| Daily active (queries) | 9router logs | Retention? |
+
+### Talk to users
+
+Mỗi signup → email cá nhân (first 20):
+- "Hey, thanks for trying deepgrep. Quick question: what IDE are you using, and what kind of queries do you usually search for?"
+- Mục tiêu: hiểu use case thật, pain point, willingness-to-pay
+
+### Decision Gate (cuối tuần 2)
+
+| Signal | Meaning | Action |
+|--------|---------|--------|
+| ≥3 paid users | Product-market fit signal | Scale marketing, automate |
+| Signups nhưng 0 paid | Value/price mismatch | Adjust tier/pricing |
+| Installs nhưng ít signups | Onboarding friction | Simplify setup/messaging |
+| ~0 everything | No market | Pivot or kill |
+
+---
+
+## KHÔNG làm trong Phase 1
+
+- ❌ Embedding index, dependency graph, context engine
+- ❌ Full auth system (manual OK)
+- ❌ Dashboard (9router logs + Stripe đủ)
+- ❌ Team features, multi-repo
+- ❌ Tự động hoá (manual đến khi đau)
+- ❌ Over-polish code (working > pretty)
+
+---
+
+## Pháp lý trước khi nhận tiền
+
+- [ ] Kiểm domain: `deepgrep.dev` / `.io` available?
+- [ ] Confirm quyền resell models qua 9router (ToS upstream providers)
+- [ ] Fast mode (SWE-1.6): nếu rủi ro cao → đổi sang Haiku qua router ($0.005/query acceptable)
+- [ ] Privacy Policy đơn giản (ghi rõ: code local, chỉ query text gửi API)
+- [ ] Terms of Service basic
+
+---
+
+## Tổng kết chiến lược
+
+```
+deepgrep (npm, free, open MCP tool)
+    ↓ user thấy giá trị fast mode
+    ↓ muốn deep mode (complex queries)
+    ↓ signup lấy key
+    ↓ free 10/day đủ thử, thấy hay
+    ↓ upgrade Pro $15/mo
+    ↓ === REVENUE ===
+    ↓
+9router (proxy infra, bạn own)
+    ↓ route → Sonnet 4.6 / GPT-5.5 combo
+    ↓ cost ~$0.02/query, charge $15/mo unlimited
+    ↓ margin dương khi user dùng <750 deep queries/mo (rất realistic)
+```
+
+Ship ngày 1. Validate ngày 14. Quyết định ngày 15.
