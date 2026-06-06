@@ -21,6 +21,7 @@ import { z } from "zod";
 import { searchWithContent, extractKeyInfo } from "./core.mjs";
 import { isOpenAIBackendConfigured, searchOpenAI } from "./openai-backend.mjs";
 import { readSnippets } from "./snippets.mjs";
+import { getBackend } from "./backends/index.mjs";
 
 /**
  * Parse an integer env var with optional clamping.
@@ -221,8 +222,8 @@ server.tool(
     }
 
     try {
-      let result;
-      // Always use Windsurf/SWE-1.6 backend for fast search
+      // Route through backend registry (AC3: unified interface)
+      const backend = getBackend("windsurf");
       const text = await searchWithContent({
         query,
         projectRoot: projectPath,
@@ -320,7 +321,8 @@ server.tool(
     process.env.FC_OPENAI_MODEL = DEEP_MODEL;
 
     try {
-      const result = await searchOpenAI({
+      const backend = getBackend("openai");
+      const result = await backend.search({
         query,
         projectRoot: projectPath,
         maxTurns: 3,

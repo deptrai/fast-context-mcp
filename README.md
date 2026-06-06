@@ -1,6 +1,6 @@
 # Fast Context MCP
 
-AI-driven semantic code search as an MCP tool — powered by Windsurf's reverse-engineered SWE-grep protocol.
+Multi-backend AI-driven semantic code search as an MCP tool — powered by Windsurf's reverse-engineered SWE-grep protocol (free) and any OpenAI-compatible endpoint.
 
 Any MCP-compatible client (Claude Code, Claude Desktop, Cursor, etc.) can use this to search codebases with natural language queries. All tools are bundled via npm — **no system-level dependencies** needed (ripgrep via `@vscode/ripgrep`, tree via `tree-node-cli`). Works on macOS, Windows, and Linux.
 
@@ -171,6 +171,7 @@ Add to `devin_mcp_config.json` under `mcpServers`:
 | `FC_DEEP_BASE_URL` | *(none)* | OpenAI-compatible API base URL for deep search |
 | `FC_DEEP_API_KEY` | *(none)* | API key for the deep search endpoint |
 | `FC_DEEP_MODEL` | `deep-search` | Model ID for deep search backend |
+| `FC_ALLOW_INSECURE_TLS` | *(unset)* | Set to `1` to disable TLS cert verification (e.g. corporate proxy) |
 
 ## Available Models
 

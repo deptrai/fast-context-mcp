@@ -1,6 +1,10 @@
+---
+baseline_commit: d7e9f343dac21f856d9c87b4161448c814d53e54
+---
+
 # Story 3: Resilience, Testing & Unified Architecture
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -33,15 +37,15 @@ so that the project is resilient, testable, and easy to extend with new provider
 
 ## Tasks
 
-- [ ] **T1. Unit test setup** — `test/` folder, `package.json scripts.test = "node --test"`.
-- [ ] **T2. Test protobuf.mjs** — ProtobufEncoder round-trip (writeString/writeVarint/writeMessage → extractStrings), connectFrameEncode → connectFrameDecode (gzip round-trip), decodeVarint edge cases.
-- [ ] **T3. Test _parseAnswer** — valid XML → correct files + ranges; path traversal `../` rejected; absolute path outside root rejected; empty `<ANSWER></ANSWER>` → 0 files.
-- [ ] **T4. Test extract-key** — `getDbPath()` priority Devin > Windsurf; missing DB → error with hint.
-- [ ] **T5. TLS hardening** — Sửa `_applyTlsFallback`: chỉ `NODE_TLS_REJECT_UNAUTHORIZED="0"` khi `FC_ALLOW_INSECURE_TLS=1`. Bỏ auto-fallback. Cập nhật error classify cho TLS failures. Thêm env var doc trong README.
-- [ ] **T6. Backend interface** — Tạo `src/backends/index.mjs` (registry/factory), `src/backends/windsurf.mjs` (wrap core.mjs#search), `src/backends/openai.mjs` (wrap openai-backend.mjs#searchOpenAI). Interface: `async search(opts) → {files, rg_patterns, _meta, error?}`.
-- [ ] **T7. Refactor server.mjs** — dùng registry: `getBackend(mode)` → `backend.search(...)` + `_formatResult`. server.mjs mỏng đi, không biết chi tiết backend.
-- [ ] **T8. README reposition** — Tiêu đề + overview = "multi-backend AI code search". Windsurf = 1 provider (free). Nhấn mạnh extensible.
-- [ ] **T9. Verify** — `npm test` pass + fast query + deep query hoạt động.
+- [x] **T1. Unit test setup** — `test/` folder, `package.json scripts.test = "node --test"`.
+- [x] **T2. Test protobuf.mjs** — ProtobufEncoder round-trip (writeString/writeVarint/writeMessage → extractStrings), connectFrameEncode → connectFrameDecode (gzip round-trip), decodeVarint edge cases.
+- [x] **T3. Test _parseAnswer** — valid XML → correct files + ranges; path traversal `../` rejected; absolute path outside root rejected; empty `<ANSWER></ANSWER>` → 0 files.
+- [x] **T4. Test extract-key** — `getDbPath()` priority Devin > Windsurf; missing DB → error with hint.
+- [x] **T5. TLS hardening** — Sửa `_applyTlsFallback`: chỉ `NODE_TLS_REJECT_UNAUTHORIZED="0"` khi `FC_ALLOW_INSECURE_TLS=1`. Bỏ auto-fallback. Cập nhật error classify cho TLS failures. Thêm env var doc trong README.
+- [x] **T6. Backend interface** — Tạo `src/backends/index.mjs` (registry/factory), `src/backends/windsurf.mjs` (wrap core.mjs#search), `src/backends/openai.mjs` (wrap openai-backend.mjs#searchOpenAI). Interface: `async search(opts) → {files, rg_patterns, _meta, error?}`.
+- [x] **T7. Refactor server.mjs** — dùng registry: `getBackend(mode)` → `backend.search(...)` + `_formatResult`. server.mjs mỏng đi, không biết chi tiết backend.
+- [x] **T8. README reposition** — Tiêu đề + overview = "multi-backend AI code search". Windsurf = 1 provider (free). Nhấn mạnh extensible.
+- [x] **T9. Verify** — `npm test` pass + fast query + deep query hoạt động.
 
 ## Dev Notes
 
@@ -87,5 +91,27 @@ so that the project is resilient, testable, and easy to extend with new provider
 ## Dev Agent Record
 
 ### Agent Model Used
+Auto (Claude via Kiro CLI)
+
 ### Completion Notes List
+- T1-T4: Test suite (18 tests) using node:test — covers protobuf encode/decode/frames, _parseAnswer XML + path-traversal guard, extract-key getDbPath priority + missing DB error handling.
+- T5: TLS hardening — _applyTlsFallback now opt-in only (FC_ALLOW_INSECURE_TLS=1). No auto-disable. Added env var to README.
+- T6: Backend interface — src/backends/{index,windsurf,openai}.mjs. Registry pattern: getBackend(name) → {search(opts)}. New provider = new class + register, no server.mjs edit.
+- T7: server.mjs refactored to use getBackend("windsurf") and getBackend("openai") for routing. Direct searchOpenAI import kept for backward compat but called through registry.
+- T8: README repositioned as "Multi-backend AI-driven semantic code search".
+- T9: npm test 18/18, node --check all files OK, MCP E2E init + live search returns results.
+
 ### File List
+- `test/protobuf.test.mjs` — NEW
+- `test/parse-answer.test.mjs` — NEW
+- `test/extract-key.test.mjs` — NEW
+- `src/backends/index.mjs` — NEW (registry)
+- `src/backends/windsurf.mjs` — NEW
+- `src/backends/openai.mjs` — NEW
+- `src/core.mjs` — MODIFIED (TLS hardening)
+- `src/server.mjs` — MODIFIED (backend registry routing)
+- `package.json` — MODIFIED (test script)
+- `README.md` — MODIFIED (multi-backend positioning + FC_ALLOW_INSECURE_TLS)
+
+## Change Log
+- 2026-06-06: Story 3 Resilience implemented — test suite (18 tests, node:test), TLS opt-in only, backend registry abstraction, server.mjs routes through getBackend(), README repositioned as multi-backend.

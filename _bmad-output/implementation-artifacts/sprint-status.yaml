@@ -18,4 +18,4 @@ development_status:
   2-search-enhancement: done
 
   # Story 3 — Resilience: test suite + TLS hardening + unified backend interface
-  3-resilience-architecture: ready-for-dev
+  3-resilience-architecture: review

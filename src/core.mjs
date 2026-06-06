@@ -273,18 +273,20 @@ async function getCachedJwt(apiKey) {
   return token;
 }
 
-// ─── TLS Fallback ──────────────────────────────────────────
-// Match Python's SSL fallback: if NODE_TLS_REJECT_UNAUTHORIZED is not set
-// and the first fetch fails with a TLS error, disable cert verification.
+// ─── TLS Security ──────────────────────────────────────────
+// TLS certificate verification is ALWAYS enabled by default.
+// Only disabled when FC_ALLOW_INSECURE_TLS=1 (e.g. corporate proxy).
 let _tlsFallbackApplied = false;
 
 function _applyTlsFallback() {
-  if (!_tlsFallbackApplied && !process.env.NODE_TLS_REJECT_UNAUTHORIZED) {
+  if (_tlsFallbackApplied) return;
+  const allowed = process.env.FC_ALLOW_INSECURE_TLS === "1";
+  if (allowed && !process.env.NODE_TLS_REJECT_UNAUTHORIZED) {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
     _tlsFallbackApplied = true;
     process.stderr.write(
-      "[fast-context] WARNING: TLS certificate verification disabled due to connection failure. " +
-      "Set NODE_TLS_REJECT_UNAUTHORIZED=0 explicitly to suppress this warning.\n"
+      "[fast-context] WARNING: TLS certificate verification disabled (FC_ALLOW_INSECURE_TLS=1). " +
+      "Remove this env var to restore secure defaults.\n"
     );
   }
 }
