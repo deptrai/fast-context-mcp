@@ -1,7 +1,8 @@
 /**
- * Windsurf API Key extraction from local installation.
+ * Windsurf / Devin Desktop API Key extraction from local installation.
  *
  * Cross-platform: macOS / Windows / Linux.
+ * Supports both Devin Desktop (post-rebrand) and legacy Windsurf paths.
  * Uses sql.js (pure JS/WASM) to read state.vscdb — no native compilation needed.
  */
 
@@ -18,16 +19,32 @@ export function getDbPath() {
   const plat = platform();
   const home = homedir();
 
+  // Try Devin Desktop first (post-rebrand), then fall back to Windsurf (legacy)
+  const appNames = ["Devin", "Windsurf"];
+
   if (plat === "darwin") {
-    return join(home, "Library", "Application Support", "Windsurf", "User", "globalStorage", "state.vscdb");
+    for (const app of appNames) {
+      const p = join(home, "Library", "Application Support", app, "User", "globalStorage", "state.vscdb");
+      if (existsSync(p)) return p;
+    }
+    // Default path (for error messaging)
+    return join(home, "Library", "Application Support", "Devin", "User", "globalStorage", "state.vscdb");
   } else if (plat === "win32") {
     const appdata = process.env.APPDATA || "";
     if (!appdata) throw new Error("Cannot determine APPDATA path");
-    return join(appdata, "Windsurf", "User", "globalStorage", "state.vscdb");
+    for (const app of appNames) {
+      const p = join(appdata, app, "User", "globalStorage", "state.vscdb");
+      if (existsSync(p)) return p;
+    }
+    return join(appdata, "Devin", "User", "globalStorage", "state.vscdb");
   } else {
     // Linux
     const config = process.env.XDG_CONFIG_HOME || join(home, ".config");
-    return join(config, "Windsurf", "User", "globalStorage", "state.vscdb");
+    for (const app of appNames) {
+      const p = join(config, app, "User", "globalStorage", "state.vscdb");
+      if (existsSync(p)) return p;
+    }
+    return join(config, "Devin", "User", "globalStorage", "state.vscdb");
   }
 }
 

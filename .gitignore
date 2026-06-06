@@ -22,3 +22,6 @@ test_*.py
 
 # Old Node.js dev copy
 fast-context-mcp-node/
+
+# Throwaway diagnostic scripts (may reference secrets via env)
+_diag.mjs

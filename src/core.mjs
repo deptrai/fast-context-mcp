@@ -79,7 +79,7 @@ const AUTH_BASE = "https://server.self-serve.windsurf.com/exa.auth_pb.AuthServic
 const WS_APP = "windsurf";
 const WS_APP_VER = process.env.WS_APP_VER || "1.48.2";
 const WS_LS_VER = process.env.WS_LS_VER || "1.9544.35";
-const WS_MODEL = process.env.WS_MODEL || "MODEL_SWE_1_6_FAST";
+const WS_MODEL = process.env.WS_MODEL || "MODEL_SWE_1_6_SLOW";
 
 // ─── System Prompt Template ────────────────────────────────
 
@@ -366,7 +366,7 @@ function getToolDefinitions(maxCommands = 8) {
 async function autoDiscoverApiKey() {
   try {
     const result = await extractKey();
-    if (result.api_key && result.api_key.startsWith("sk-")) {
+    if (result.api_key && result.api_key.length > 10) {
       return result.api_key;
     }
   } catch {

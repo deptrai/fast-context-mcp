@@ -19,6 +19,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 import { searchWithContent, extractKeyInfo } from "./core.mjs";
+import { isOpenAIBackendConfigured, searchOpenAI } from "./openai-backend.mjs";
 
 /**
  * Parse an integer env var with optional clamping.
@@ -62,6 +63,58 @@ const server = new McpServer({
 });
 
 // ─── Tool: fast_context_search ─────────────────────────────
+
+/**
+ * Format search result object into text output.
+ */
+function _formatResult(result, maxTurns, maxResults, maxCommands, timeoutMs, excludePaths) {
+  if (result.error) {
+    const meta = result._meta || {};
+    let errMsg = `Error: ${result.error}`;
+    if (meta.backend) errMsg += ` [backend=${meta.backend}, model=${meta.model}]`;
+    if (meta.treeDepth != null) errMsg += `\n[diagnostic] tree_depth=${meta.treeDepth}, tree_size=${meta.treeSizeKB}KB`;
+    return errMsg;
+  }
+
+  const files = result.files || [];
+  const rgPatterns = result.rg_patterns || [];
+  const uniquePatterns = [...new Set(rgPatterns)].filter((p) => p.length >= 3);
+  const meta = result._meta || {};
+
+  if (!files.length && !uniquePatterns.length) {
+    return "No relevant files found.";
+  }
+
+  const parts = [];
+  const n = files.length;
+
+  if (files.length) {
+    parts.push(`Found ${n} relevant files.`);
+    parts.push("");
+    for (let i = 0; i < files.length; i++) {
+      const entry = files[i];
+      const rangesStr = entry.ranges.map(([s, e]) => `L${s}-${e}`).join(", ");
+      parts.push(`  [${i + 1}/${n}] ${entry.full_path} (${rangesStr})`);
+    }
+  } else {
+    parts.push("No files found.");
+  }
+
+  if (uniquePatterns.length) {
+    parts.push("");
+    parts.push(`grep keywords: ${uniquePatterns.join(", ")}`);
+  }
+
+  if (meta) {
+    const fbNote = meta.fellBack ? ` (fell back)` : "";
+    parts.push("");
+    let configLine = `[config] backend=${meta.backend || "windsurf"}, model=${meta.model || "SWE-1.6"}, tree_depth=${meta.treeDepth}${fbNote}, tree_size=${meta.treeSizeKB}KB, max_turns=${maxTurns}`;
+    if (excludePaths.length) configLine += `, exclude_paths=[${excludePaths.join(", ")}]`;
+    parts.push(configLine);
+  }
+
+  return parts.join("\n");
+}
 
 server.tool(
   "fast_context_search",
@@ -140,7 +193,9 @@ server.tool(
     }
 
     try {
-      const result = await searchWithContent({
+      let result;
+      // Always use Windsurf/SWE-1.6 backend for fast search
+      const text = await searchWithContent({
         query,
         projectRoot: projectPath,
         maxTurns: max_turns,
@@ -150,7 +205,7 @@ server.tool(
         timeoutMs: TIMEOUT_MS,
         excludePaths: exclude_paths,
       });
-      return { content: [{ type: "text", text: result }] };
+      return { content: [{ type: "text", text }] };
     } catch (e) {
       const code = e.code || "UNKNOWN";
       return {
@@ -164,6 +219,92 @@ server.tool(
             `  - Reduce max_turns (current: ${max_turns})`
         }]
       };
+    }
+  }
+);
+
+// ─── Tool: deep_context_search ─────────────────────────────
+
+const DEEP_BASE_URL = process.env.FC_DEEP_BASE_URL || "";
+const DEEP_API_KEY = process.env.FC_DEEP_API_KEY || "";
+const DEEP_MODEL = process.env.FC_DEEP_MODEL || "deep-search";
+
+server.tool(
+  "deep_context_search",
+  "Deep AI-driven semantic code search using Claude Sonnet via 9router. " +
+  "More thorough than fast_context_search but slower (20-40s). " +
+  "Use when fast_context_search returns 0 results or when you need comprehensive cross-file analysis.\n" +
+  "Returns file paths with line ranges + grep keywords.\n" +
+  "Best for: complex queries, tracing data flows, understanding architecture, finding all related code across a monorepo.",
+  {
+    query: z.string().describe(
+      'Natural language search query (e.g. "how is auth middleware connected to the database layer")'
+    ),
+    project_path: z
+      .string()
+      .default("")
+      .describe("Absolute path to project root. Empty = current working directory."),
+    tree_depth: z
+      .number()
+      .int()
+      .min(1)
+      .max(6)
+      .default(3)
+      .describe("Directory tree depth. Default 3. Use 1-2 for huge repos."),
+    max_results: z
+      .number()
+      .int()
+      .min(1)
+      .max(30)
+      .default(10)
+      .describe("Maximum files to return. Default 10."),
+    exclude_paths: z
+      .array(z.string())
+      .default([])
+      .describe("Patterns to exclude (e.g. ['node_modules', 'dist', '.git'])"),
+  },
+  async ({ query, project_path, tree_depth, max_results, exclude_paths }) => {
+    if (!DEEP_BASE_URL || !DEEP_API_KEY) {
+      return { content: [{ type: "text", text: "Error: deep_context_search not configured. Set FC_DEEP_BASE_URL and FC_DEEP_API_KEY env vars." }] };
+    }
+
+    let projectPath = project_path || process.cwd();
+    try {
+      const { statSync } = await import("node:fs");
+      if (!statSync(projectPath).isDirectory()) {
+        return { content: [{ type: "text", text: `Error: project path does not exist: ${projectPath}` }] };
+      }
+    } catch {
+      return { content: [{ type: "text", text: `Error: project path does not exist: ${projectPath}` }] };
+    }
+
+    // Temporarily set env for OpenAI backend
+    const prevBase = process.env.FC_OPENAI_BASE_URL;
+    const prevKey = process.env.FC_OPENAI_API_KEY;
+    const prevModel = process.env.FC_OPENAI_MODEL;
+    process.env.FC_OPENAI_BASE_URL = DEEP_BASE_URL;
+    process.env.FC_OPENAI_API_KEY = DEEP_API_KEY;
+    process.env.FC_OPENAI_MODEL = DEEP_MODEL;
+
+    try {
+      const result = await searchOpenAI({
+        query,
+        projectRoot: projectPath,
+        maxTurns: 3,
+        maxCommands: MAX_COMMANDS,
+        maxResults: max_results,
+        treeDepth: tree_depth,
+        timeoutMs: 90000,
+        excludePaths: exclude_paths.length ? exclude_paths : ["node_modules", "dist", ".git", "build", ".next"],
+      });
+      return { content: [{ type: "text", text: _formatResult(result, 3, max_results, MAX_COMMANDS, 90000, exclude_paths) }] };
+    } catch (e) {
+      return { content: [{ type: "text", text: `Error [deep]: ${e.message}` }] };
+    } finally {
+      // Restore env
+      if (prevBase !== undefined) process.env.FC_OPENAI_BASE_URL = prevBase; else delete process.env.FC_OPENAI_BASE_URL;
+      if (prevKey !== undefined) process.env.FC_OPENAI_API_KEY = prevKey; else delete process.env.FC_OPENAI_API_KEY;
+      if (prevModel !== undefined) process.env.FC_OPENAI_MODEL = prevModel; else delete process.env.FC_OPENAI_MODEL;
     }
   }
 );
