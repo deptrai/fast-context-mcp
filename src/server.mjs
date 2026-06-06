@@ -47,7 +47,7 @@ const TIMEOUT_MS = readIntEnv("FC_TIMEOUT_MS", 30000, { min: 1000, max: 300000 }
 
 const server = new McpServer({
   name: "windsurf-fast-context",
-  version: "1.2.0",
+  version: "1.3.0",
   instructions:
     "Windsurf Fast Context — AI-driven semantic code search. " +
     "Returns file paths with line ranges and grep keywords.\n" +

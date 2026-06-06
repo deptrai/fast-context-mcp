@@ -139,6 +139,22 @@ For beta/next release:
 
 > If `WINDSURF_API_KEY` is omitted, the server auto-discovers it from your local Windsurf installation.
 
+#### Devin Desktop
+
+Add to `devin_mcp_config.json` under `mcpServers`:
+
+```json
+{
+  "fast-context": {
+    "command": "npx",
+    "args": ["-y", "--prefer-online", "@sammysnake/fast-context-mcp"],
+    "env": {
+      "WINDSURF_API_KEY": "sk-ws-01-xxxxx"
+    }
+  }
+}
+```
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -149,9 +165,12 @@ For beta/next release:
 | `FC_TIMEOUT_MS` | `30000` | Connect-Timeout-Ms for streaming requests |
 | `FC_RESULT_MAX_LINES` | `50` | Max lines per command output (truncation) |
 | `FC_LINE_MAX_CHARS` | `250` | Max characters per output line (truncation) |
-| `WS_MODEL` | `MODEL_SWE_1_6_FAST` | Windsurf model name |
+| `WS_MODEL` | `MODEL_SWE_1_6_SLOW` | Windsurf model name |
 | `WS_APP_VER` | `1.48.2` | Windsurf app version (protocol metadata) |
 | `WS_LS_VER` | `1.9544.35` | Windsurf language server version (protocol metadata) |
+| `FC_DEEP_BASE_URL` | *(none)* | OpenAI-compatible API base URL for deep search |
+| `FC_DEEP_API_KEY` | *(none)* | API key for the deep search endpoint |
+| `FC_DEEP_MODEL` | `deep-search` | Model ID for deep search backend |
 
 ## Available Models
 
@@ -159,7 +178,7 @@ The model can be changed by setting `WS_MODEL` (see environment variables above)
 
 ![Available Models](docs/models.png)
 
-Default: `MODEL_SWE_1_6_FAST` — fastest speed, richest grep keywords, finest location granularity.
+Default: `MODEL_SWE_1_6_SLOW` — balanced speed and accuracy for deep semantic search.
 
 ## MCP Tools
 
@@ -208,6 +227,20 @@ Error: Request failed: HTTP 413
 [hint] If the error is payload-related, try a lower tree_depth value.
 ```
 
+### `deep_context_search`
+
+Deep AI-driven semantic code search using an OpenAI-compatible backend (e.g. Claude Sonnet via 9router). More thorough than `fast_context_search` but slower (20-40s). Use when fast search returns 0 results or when you need comprehensive cross-file analysis.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | — | Natural language search query |
+| `project_path` | string | No | cwd | Absolute path to project root |
+| `tree_depth` | integer | No | `3` | Directory tree depth (1-6) |
+| `max_results` | integer | No | `10` | Maximum files to return (1-30) |
+| `exclude_paths` | string[] | No | `[]` | Patterns to exclude |
+
+Requires `FC_DEEP_BASE_URL` and `FC_DEEP_API_KEY` env vars to be set.
+
 ### `extract_windsurf_key`
 
 Extract Windsurf API Key from local installation. No parameters.
@@ -219,7 +252,9 @@ fast-context-mcp/
 ├── package.json
 ├── src/
 │   ├── server.mjs        # MCP server entry point
-│   ├── core.mjs          # Auth, message building, streaming, search loop
+│   ├── core.mjs          # Windsurf protocol: auth, streaming, search loop
+│   ├── openai-backend.mjs # OpenAI-compatible backend for deep search
+│   ├── shared.mjs        # Shared utilities: getRepoMap, prompts, parsers
 │   ├── executor.mjs      # Tool executor: rg, readfile, tree, ls, glob
 │   ├── extract-key.mjs   # Windsurf API Key extraction (SQLite)
 │   └── protobuf.mjs      # Protobuf encoder/decoder + Connect-RPC frames
@@ -242,7 +277,7 @@ fast-context-mcp/
 ## Technical Details
 
 - **Protocol**: Connect-RPC over HTTP/1.1, Protobuf encoding, gzip compression
-- **Model**: Devstral (`MODEL_SWE_1_6_FAST`, configurable)
+- **Model**: Devstral (`MODEL_SWE_1_6_SLOW`, configurable)
 - **Local tools**: `rg` (bundled via @vscode/ripgrep), `readfile` (Node.js fs), `tree` (tree-node-cli), `ls` (Node.js fs), `glob` (Node.js fs)
 - **Auth**: API Key → JWT (auto-fetched per session)
 - **Runtime**: Node.js >= 18 (ESM)
@@ -254,7 +289,7 @@ fast-context-mcp/
 | `@modelcontextprotocol/sdk` | MCP server framework |
 | `@vscode/ripgrep` | Bundled ripgrep binary (cross-platform) |
 | `tree-node-cli` | Cross-platform directory tree (replaces system `tree`) |
-| `better-sqlite3` | Read Windsurf's local SQLite DB |
+| `sql.js` | Read Windsurf's local SQLite DB (WASM, no native compile) |
 | `zod` | Schema validation (MCP SDK requirement) |
 
 ## License
