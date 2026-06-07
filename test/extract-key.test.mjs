@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getDbPath, extractKey } from "../src/extract-key.mjs";
+import { getDbPath, extractKey } from "../deepgrep/src/extract-key.mjs";
 
 describe("getDbPath", () => {
   it("returns a string path", () => {

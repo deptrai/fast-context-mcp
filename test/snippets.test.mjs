@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readSnippets } from "../src/snippets.mjs";
+import { readSnippets } from "../deepgrep/src/snippets.mjs";
 
 describe("readSnippets", () => {
   let dir, file;

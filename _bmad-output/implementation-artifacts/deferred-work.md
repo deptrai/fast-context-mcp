@@ -1,6 +1,17 @@
 # Deferred Work
 
+## Deferred from: code review of 1-core-intelligence (2026-06-07)
+
+- apiKey rỗng → blank Bearer token [deepgrep/src/openai-backend.mjs:203] — Khi cả `opts.apiKey` lẫn env `DEEPGREP_API_KEY` đều rỗng, `_doFetch` gửi header `Authorization: Bearer ` (không key) → server trả 401 sau 1 round-trip thừa. `friendlyError` đã bắt 401 và hướng dẫn set key, nên fail gracefully — chỉ cần guard sớm `if(!apiKey) throw` để tiết kiệm round-trip. Hardening nhỏ, làm sau.
+- Nhánh fast-openai non-escalated bỏ qua `include_snippets` [deepgrep/src/server.mjs:300] — Khi `FAST_BACKEND=openai` trả kết quả non-empty (không escalate), `_formatResult` được gọi KHÔNG truyền `include_snippets` → snippet không bao giờ trả về trên path này. Pre-existing, không do story-1 diff gây ra. Đồng bộ các path sau.
+
 ## Deferred from: code review of 2-search-enhancement (2026-06-06)
 
 - Cache returns shared mutable object references [src/cache.mjs getCachedResult] — `getCachedResult` returns the stored object; callers shallow-spread `{...cached}`. Latent: no current code mutates `.files`/`.ranges`/`.rg_patterns` in place, but a future in-place sort/splice would poison all cache hits + the stored entry. Fix later with a structured clone on get/set.
 - Large file fully read before slicing [src/snippets.mjs:29] — `readFileSync` loads the entire file then `split("\n")` before slicing the range. For very large match files this is wasteful (budget bounds output, not input). Perf-only, not correctness. Consider streaming/partial read later.
+
+## Deferred from: code review of 2-developer-experience (2026-06-07)
+
+- **Single binary (T3 / AC#5-6-7) → defer v1.2** [deepgrep package.json build:binary] — Verify thực nghiệm 2026-06-07: (1) binary `bun build --compile` bị `Killed: 9`/SIGKILL ngay khi start trên macOS + bun 1.3.12 (cả `dist/deepgrep` dev đã build lẫn probe mới); `codesign` báo "invalid or unsupported format". (2) Kể cả nếu chạy, native `rg` KHÔNG được embed — `strings` cho thấy `__dirname` bị bake cứng = `/Users/luisphan/Documents/fast-context-mcp/node_modules/@vscode/ripgrep/lib`, nên `rgPath` trỏ tới node_modules máy build → máy user tải binary về sẽ ENOENT, `deepgrep_search` fail. Tương tự rủi ro `sql.js` wasm (initSqlJs không có locateFile). ⇒ Theo ADR-5, defer binary sang v1.2, giữ npx primary. v1.2 cần: embed rg qua bun `--asset`/đặt rg cạnh binary + resolve path theo `process.execPath`, set `initSqlJs({locateFile})`, và xử lý SIGKILL (thử bun `--target` khác hoặc codesign hợp lệ). README "Option B: Standalone binary" nên gắn nhãn experimental/v1.2 (xem patch).
+- Plain-keyword substring over-match [deepgrep/src/escalate.mjs:~12-16] — Các keyword chuỗi thường ("flow", "trace", "across", "through") match dạng substring nên "tensorflow" / "stacktrace" / "across-the-board" có thể bị tính là multi-hop → false-escalate sang deep mode (tốn token). Pre-existing: diff Story 2 chỉ word-bound mỗi `from.*to`, không đụng các keyword này. Fix sau: áp word-boundary nhất quán cho toàn bộ keyword chuỗi.
+- Pre-escalation deep call ngoài try/catch [deepgrep/src/server.mjs:~263-277] — Nhánh pre-escalate (gọi deep backend trước khi vào `try {`) nếu throw (network/timeout) sẽ trả raw MCP error thay vì block `[hint]` thân thiện như nhánh quick. Pre-existing: cấu trúc escalation-ngoài-try đã tồn tại trước diff; thuộc phạm vi Story 1 (auto-escalation). Fix khi xử lý scope Story 1: bọc try/catch hoặc dời `try` lên trước.

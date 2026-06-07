@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getRepoMap, _excludePatternToRegex, buildWindsurfPrompt, buildOpenAIPrompt, MAX_TREE_BYTES, FINAL_FORCE_ANSWER, FINAL_FORCE_ANSWER_OPENAI } from "../src/shared.mjs";
+import { getRepoMap, _excludePatternToRegex, buildWindsurfPrompt, buildOpenAIPrompt, MAX_TREE_BYTES, FINAL_FORCE_ANSWER, FINAL_FORCE_ANSWER_OPENAI } from "../deepgrep/src/shared.mjs";
 
 describe("_excludePatternToRegex", () => {
   it("matches exact name (literal)", () => {

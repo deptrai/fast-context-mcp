@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getBackend, listBackends, registerBackend } from "../src/backends/index.mjs";
+import { getBackend, listBackends, registerBackend } from "../deepgrep/src/backends/index.mjs";
 
 describe("Backend Registry", () => {
   it("lists windsurf and openai", () => {

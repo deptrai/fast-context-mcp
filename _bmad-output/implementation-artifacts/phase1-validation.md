@@ -76,7 +76,7 @@
 Sửa `src/server.mjs`:
 
 ```javascript
-const DEEP_BASE_URL = process.env.DEEPGREP_API_URL || "https://api.deepgrep.dev/v1";
+const DEEP_BASE_URL = process.env.DEEPGREP_API_URL || "https://api.deepgrep.chainlens.net/v1";
 const DEEP_API_KEY = process.env.DEEPGREP_API_KEY || "";
 const DEEP_MODEL = process.env.DEEPGREP_MODEL || "deep-search";
 ```
@@ -86,7 +86,7 @@ Khi không có key:
 ⚡ Deep search requires an API key.
 
 Get yours free (includes 10 deep queries/day):
-  → https://deepgrep.dev
+  → https://deepgrep.chainlens.net
 
 Then add to your MCP config:
   "env": { "DEEPGREP_API_KEY": "your-key" }
@@ -118,7 +118,7 @@ Khi chạy deep query:
 
 ### Task 2.1: Domain + Landing
 
-**Domain:** `deepgrep.dev` (hoặc `.io` nếu `.dev` bị chiếm — check)
+**Domain:** `deepgrep.chainlens.net` (hoặc `.io` nếu `.dev` bị chiếm — check)
 
 **Landing page (1 trang, Vercel/static):**
 
@@ -167,7 +167,7 @@ FOOTER: "Powered by frontier AI models. Your code never leaves your machine."
 
 - Free key prefix `dg-free-*`: 10 deep requests/ngày
 - Pro key prefix `dg-pro-*`: unlimited (5000/day safety)
-- Hết quota → 429 + message: "Daily free limit reached. Upgrade: https://deepgrep.dev/pro"
+- Hết quota → 429 + message: "Daily free limit reached. Upgrade: https://deepgrep.chainlens.net/pro"
 
 ---
 
@@ -201,7 +201,7 @@ AI code search that **thinks** — not just matches keywords.
   }
 }
 
-Get your free key: https://deepgrep.dev
+Get your free key: https://deepgrep.chainlens.net
 
 ## How It Works
 Unlike embedding-based tools (need indexing, daemon, 800MB models),
@@ -283,7 +283,7 @@ Mỗi signup → email cá nhân (first 20):
 
 ## Pháp lý trước khi nhận tiền
 
-- [ ] Kiểm domain: `deepgrep.dev` / `.io` available?
+- [ ] Kiểm domain: `deepgrep.chainlens.net` / `.io` available?
 - [ ] Confirm quyền resell models qua 9router (ToS upstream providers)
 - [ ] Fast mode (SWE-1.6): nếu rủi ro cao → đổi sang Haiku qua router ($0.005/query acceptable)
 - [ ] Privacy Policy đơn giản (ghi rõ: code local, chỉ query text gửi API)

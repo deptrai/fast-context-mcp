@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildCacheKey, getCachedResult, setCachedResult, clearCache, computeMtimeHash } from "../src/cache.mjs";
+import { buildCacheKey, getCachedResult, setCachedResult, clearCache, computeMtimeHash } from "../deepgrep/src/cache.mjs";
 
 describe("buildCacheKey", () => {
   it("produces deterministic 64-char hex", () => {

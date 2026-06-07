@@ -6,7 +6,7 @@ import {
   extractStrings,
   connectFrameEncode,
   connectFrameDecode,
-} from "../src/protobuf.mjs";
+} from "../deepgrep/src/protobuf.mjs";
 
 describe("ProtobufEncoder", () => {
   it("writeString + extractStrings round-trip", () => {
