@@ -1,7 +1,7 @@
 ---
-stepsCompleted: ['step-01-preflight-and-context', 'step-02-identify-targets', 'step-03-generate-tests', 'step-03c-aggregate', 'step-04-validate-and-summarize']
-lastStep: 'step-04-validate-and-summarize'
-lastSaved: '2026-06-07'
+stepsCompleted: ['step-01-preflight-and-context', 'step-02-identify-targets', 'step-03-generate-tests', 'step-03c-aggregate', 'step-04-validate-and-summarize', 'step-05-snippets-tool-coverage']
+lastStep: 'step-05-snippets-tool-coverage'
+lastSaved: '2026-06-08'
 inputDocuments:
   - deepgrep/src/executor.mjs
   - deepgrep/src/health.mjs
