@@ -51,8 +51,6 @@ Generated: 2026-06-08
 - `server.mjs` `_formatResult()` — not exported
 - Integration tests — MCP stdio protocol end-to-end
 
-## Next Steps
-
 1. **`ci`** — wire `test:ci` into GitHub Actions
 2. **`trace`** — traceability matrix (story ACs → tests)
 3. **Integration** — MCP stdio client test
