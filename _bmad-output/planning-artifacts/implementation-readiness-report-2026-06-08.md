@@ -71,15 +71,15 @@ None. No technical-milestone epics, no forward feature-dependencies, no incomple
 
 ### Major Issues
 
-**M1 — Traceability gap (Epic 4/5, affects 5 stories).**
-Stories 4.1/4.2/4.3/5.1/5.2 don't map to numbered PRD FRs. PRD §9 describes the Context Engine vision in prose only. Impact: `bmad-create-story` for 4.1 will lack a source FR to trace, weakening dev context. Remediation (low effort):
-- Add FR9 (stable output contract), FR10 (context pack), FR11 (ranking/dedup), NFR6 (char-budget enforcement), NFR7 (role heuristic no-AST), FR12-gated (indexed tier) to PRD §4
-- Update epics.md Requirements Inventory + FR Coverage Map to include FR9-12
+**M1 — Traceability gap (Epic 4/5, affects 5 stories). ✅ RESOLVED 2026-06-08.**
+Was: Stories 4.1/4.2/4.3/5.1/5.2 didn't map to numbered PRD FRs. Fixed:
+- Added FR9 (stable output contract), FR10 (context pack), FR11 (ranking/dedup), FR12-gated (indexed tier), NFR6 (char-budget), NFR7 (role heuristic no-AST) to PRD §4-5
+- Updated epics.md Requirements Inventory (grouped v1.1/v1.2/v1.3/v2.0) + FR Coverage Map (now FR1-12 + NFR6-7 mapped to stories)
 
 ### Minor Concerns
-- **m1:** Story 2.2 AC#3 "all tools work like npx version" is vague (done, retrospective note).
-- **m2:** Story 1.2 merges FR1+FR5 in one story (done, works, retrospective note).
-- **m3:** epics.md Requirements Inventory + FR Coverage Map stale — fix with M1.
+- **m1:** ✅ RESOLVED — Story 2.2 AC#3 rewritten with explicit per-tool parity check + ADR-5 native-dep fallback.
+- **m2:** ✅ RESOLVED — Story 1.2 ACs split into FR1 (escalation) + FR5 (refinement) sections with co-location rationale.
+- **m3:** ✅ RESOLVED — epics.md Requirements Inventory + FR Coverage Map refreshed (FR1-12).
 
 ### Best Practices Compliance
 All epics deliver user value, are independent, properly sized, no forward feature-dependencies, clear Given/When/Then ACs. Epic 4 order 4.1->4.3->4.2 is legitimate output-dependency, not a violation. Only traceability is flagged.
@@ -89,17 +89,22 @@ All epics deliver user value, are independent, properly sized, no forward featur
 ### Overall Readiness Status
 
 - **v1.1 / v1.2 (Epic 1-3): READY / SHIPPED** — 8/8 FR covered, 259 tests passing, all done or resolved.
-- **v1.3 (Epic 4): NEEDS WORK (minor)** — architecturally sound (ADR-8/9/10), well-ordered, but needs FR9-11 + NFR6-7 added to PRD before dev to close traceability.
+- **v1.3 (Epic 4): ✅ READY** — architecturally sound (ADR-8/9/10), well-ordered, traceability closed (FR9-11 + NFR6-7 in PRD, FR Coverage Map updated). Ready for `bmad-create-story` on Story 4.1.
 - **v2.0 (Epic 5): GATED** — correctly deferred; no action until gate passes.
 
 ### Critical Issues Requiring Immediate Action
 None blocking. No critical violations found.
 
-### Recommended Next Steps
-1. **Before v1.3 dev:** Add FR9-12 + NFR6-7 to PRD §4 (closes M1). ~15 min.
-2. **Same edit:** Refresh epics.md Requirements Inventory + FR Coverage Map to include FR9-12. ~5 min.
-3. **Then:** Run `bmad-create-story` for Story 4.1 (stable output contract) — first in dependency order, foundation for 4.2/4.3.
-4. **Retrospective backlog:** note m1 + m2 — non-blocking, already shipped.
+### Recommended Next Steps (all remediation issues now closed 2026-06-08)
+1. ✅ DONE: FR9-12 + NFR6-7 added to PRD §4-5.
+2. ✅ DONE: epics.md Requirements Inventory + FR Coverage Map refreshed.
+3. ✅ DONE: m1 (Story 2.2 AC) + m2 (Story 1.2 FR split) clarified.
+4. **Next:** Run `bmad-create-story` for Story 4.1 (stable output contract) — first in dependency order 4.1→4.3→4.2, foundation for the rest.
 
 ### Final Note
-This assessment found 1 major issue (M1 traceability, 1 root cause across 5 stories) and 3 minor concerns across 6 categories. No critical violations. Planning is in strong shape — Epic 1-3 fully ready/shipped, Epic 4 needs only a ~20-minute PRD/epics traceability patch before dev. Address M1 before starting v1.3 implementation, or proceed as-is accepting weaker story-generation context.
+Original assessment: 1 major issue (M1) + 3 minor concerns, no critical violations. **All issues remediated 2026-06-08** in the same session: M1 traceability closed (FR9-12, NFR6-7, coverage map), m1/m2/m3 fixed. Planning is now fully READY across v1.1-v1.3; v2.0 correctly gated. Next action: create Story 4.1.
+
+### Remediation Status: ✅ ALL CLEAR
+- 🔴 Critical: 0
+- 🟠 Major: 1 (M1) → RESOLVED
+- 🟡 Minor: 3 (m1/m2/m3) → ALL RESOLVED

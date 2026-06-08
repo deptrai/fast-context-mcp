@@ -11,25 +11,43 @@ lastUpdated: 2026-06-07
 
 ## Requirements Inventory
 
+**v1.1/v1.2 (done):**
 - FR1: Auto-escalation quick → deep
 - FR2: Cache verify & hoàn thiện
 - FR3: Better error UX
 - FR4: Health-check tool `deepgrep_status`
 - FR5: Query refinement (quick mode)
 - FR6: Single binary build
-- NFR1-4: latency, no heavy deps, backward compat
+- FR7: Token-efficient `deepgrep_get`
+- FR8: Warm cache (closed wont-do by data)
+
+**v1.3 (backlog — Context Engine):**
+- FR9: Stable structured output contract (`output_format=json`, single `contract.mjs`)
+- FR10: Context Pack tool `deepgrep_pack` (budget-enforced, role labels)
+- FR11: Result ranking & dedup (`rank.mjs` pure module)
+
+**v2.0 (gated):**
+- FR12: Optional indexed tier (`deepgrep index`, same contract as zero-index)
+
+**NFRs:** NFR1-5 (latency/deps/compat), NFR6 (pack budget), NFR7 (role heuristic no-AST).
 
 ## FR Coverage Map
 
 | FR | Story | Status |
 |----|-------|--------|
 | FR2, NFR1 | 1.1 | ✅ done |
-| FR1, FR5, NFR2 | 1.2 | ✅ done |
+| FR1, NFR2 | 1.2 (multi-hop/empty) | ✅ done |
+| FR5 | 1.2 (non-English refineHint) | ✅ done — co-located with FR1 in shouldEscalate |
 | FR3 | 1.3 | ✅ done |
 | FR4 | 2.1 | ✅ done |
 | FR6 | 2.2 | ✅ done |
-| FR7 | 3.1 | 🔲 backlog |
-| FR8 | 3.2 | 🔲 backlog |
+| FR7 | 3.1 | ✅ done |
+| FR8 | 3.2 | 🚫 wont-do (data-driven, see story file) |
+| FR9, ADR-8 | 4.1 | 🔲 backlog |
+| FR11 | 4.3 | 🔲 backlog |
+| FR10, NFR6, NFR7, ADR-9 | 4.2 | 🔲 backlog |
+| FR12, ADR-10 | 5.1 | 🔒 gated |
+| FR12 (multi-repo) | 5.2 | 🔒 gated |
 
 ## Epic List
 
@@ -57,19 +75,24 @@ so that I save time and API tokens.
 - **Given** `DEEPGREP_CACHE_DISABLED=1`, **Then** cache bị bypass hoàn toàn
 - **Given** `DEEPGREP_CACHE_TTL_MS=N`, **Then** TTL áp dụng đúng
 
-### Story 1.2: Auto-escalation quick → deep
+### Story 1.2: Auto-escalation quick → deep (covers FR1 + FR5)
 
 As a user who doesn't want to pick tools,
-I want deepgrep to automatically use deep mode for complex queries,
+I want deepgrep to automatically use deep mode for complex queries and surface refinement hints for vague queries,
 so that I always get good results without choosing.
 
-**Acceptance Criteria:**
+**Acceptance Criteria — FR1 (escalation):**
 - **Given** query ≥3 mệnh đề hoặc chứa keywords multi-hop (trace/flow/across/from...to), **When** gọi deepgrep_search, **Then** tự escalate sang deep mode
 - **Given** quick mode trả 0 results, **When** auto_escalate=true, **Then** retry bằng deep mode (1 lần)
 - **Given** query đơn giản 1 vế, **Then** chạy quick, KHÔNG escalate (không tăng latency)
 - **Given** `auto_escalate=false`, **Then** không bao giờ escalate
-- **Given** output sau escalation, **Then** ghi rõ "[escalated to deep mode]"
-- **Given** query non-English/mơ hồ, **Then** gợi ý rephrase HOẶC escalate (FR5)
+- **Given** output sau escalation, **Then** ghi rõ `[escalated to deep mode]`
+
+**Acceptance Criteria — FR5 (query refinement, co-located with shouldEscalate):**
+- **Given** query non-English (non-ASCII detected) hoặc mơ hồ, **Then** `shouldEscalate` trả `refineHint` gợi ý rephrase bằng code terms tiếng Anh
+- **Given** non-English query escalate được, **Then** vừa escalate sang deep vừa append refineHint vào output (không loại trừ nhau)
+
+**Why co-located:** `shouldEscalate(query)` đã đánh giá toàn bộ query characteristics (clauses + keywords + non-ASCII) trong một pass — tách FR5 thành story riêng sẽ duplicate logic. ACs phía trên phân biệt rõ FR1 vs FR5 contribution.
 
 ### Story 1.3: Better error UX
 
@@ -105,9 +128,10 @@ I want a standalone binary,
 so that I can run deepgrep without installing Node.
 
 **Acceptance Criteria:**
-- **Given** `bun build --compile`, **Then** tạo binary chạy được không cần Node
-- **Given** CI release, **Then** build binary cho macOS/Linux/Windows
-- **Given** binary, **Then** mọi tool (search/deep/status) hoạt động như npx version
+- **Given** `bun build --compile`, **Then** tạo binary chạy được không cần Node runtime
+- **Given** CI release, **Then** build binary cho macOS/Linux/Windows kèm release artifacts
+- **Given** binary, **When** chạy `deepgrep_search`, `deepgrep_deep`, `deepgrep_status`, `deepgrep_get` qua MCP stdio, **Then** mỗi tool trả output identical với npx version (cùng schema, cùng error handling, cùng env vars)
+- **Given** binary, **When** native deps (`@vscode/ripgrep`, `sql.js`) không bundle được, **Then** defer per ADR-5 và document fallback path (npx vẫn primary distribution)
 
 
 ---

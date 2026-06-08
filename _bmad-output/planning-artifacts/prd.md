@@ -74,6 +74,30 @@ deepgrep v1.0 đã ship: MCP server semantic code search với 2 mode (fast SWE-
 - THE system SHALL cung cấp lệnh/tool để precompute repo map và warm cache trước khi query.
 - **Priority:** P1 optional, ship kèm FR7 nếu còn budget.
 
+### 🔲 FR9 — Stable structured output contract (v1.3)
+- WHEN `output_format=json` truyền vào `deepgrep_search`/`deepgrep_deep`/`deepgrep_get`, THE system SHALL trả schema ổn định gồm `schema_version`, `files[]`, `grep_keywords[]`, `meta{backend,mode,cache_hit,retrieval,index_used,...}` (xem ADR-8).
+- THE forward-looking fields `retrieval` và `index_used` SHALL có mặt trong v1.3 với giá trị mặc định `"lexical"` / `false` (reserved cho v2.0 indexed tier — non-breaking).
+- THE existing text mode SHALL là default và unchanged (backward compat).
+- ALL serialization SHALL đi qua một module duy nhất `src/contract.mjs` — không có nhánh JSON rải rác per-tool.
+
+### 🔲 FR10 — Context Pack tool `deepgrep_pack` (v1.3)
+- THE system SHALL cung cấp tool `deepgrep_pack` nhận `{query?, files?, ranges?, max_chars, max_lines?}` và trả snippets nhóm theo role + ordered theo rank, trong budget.
+- WHEN `files`/`ranges` truyền trực tiếp, THE tool SHALL hoạt động pure local (không gọi API, không cần key).
+- THE tool SHALL reuse `readSnippets` + `formatSnippetToolOutput` (Story 3.1) — KHÔNG duplicate snippet I/O.
+- THE tool description SHALL nêu rõ workflow: `deepgrep_search` → `deepgrep_pack` (xem ADR-9).
+
+### 🔲 FR11 — Result ranking & dedup (v1.3)
+- WHEN nhiều results trả về, THE system SHALL merge duplicate file paths và overlapping ranges trong cùng file.
+- WHEN query không yêu cầu test, THE system SHALL ưu tiên source files over test/docs (path heuristic: `/test/`, `.test.`, `__tests__/`).
+- WHEN deep-mode trả results đã được LLM order, THE system SHALL chỉ rerank khi multi-file results hoặc explicit `rerank=true` — default trust LLM order.
+- THE ranking logic SHALL nằm trong pure module `src/rank.mjs` (testable in isolation).
+
+### 🔒 FR12 (gated, v2.0) — Optional indexed tier
+- IF gate ADR-10 passes (≥2/4 conditions trong §9), THEN THE system MAY cung cấp opt-in local index `.deepgrep/` qua command `deepgrep index`.
+- THE indexed mode SHALL trả cùng output contract như zero-index (hidden backend).
+- THE zero-index mode SHALL vẫn là default, non-breaking khi không có index.
+- BYOM embeddings, no lock-in. KHÔNG symbol graph / refactor (Serena territory).
+
 ## 5. NFRs
 
 - NFR1. Cache hit trả < 100ms.
@@ -81,6 +105,8 @@ deepgrep v1.0 đã ship: MCP server semantic code search với 2 mode (fast SWE-
 - NFR3. Không thêm dependency nặng (giữ zero system-level dep).
 - NFR4. Backward compatible — config v1.0 vẫn chạy.
 - NFR5. `deepgrep_get` không gọi API, latency < 50ms cho file thông thường.
+- NFR6 (v1.3). `deepgrep_pack` output KHÔNG vượt `max_chars` budget; dropped snippets được report rõ ràng.
+- NFR7 (v1.3). Role labeling heuristic-bounded — KHÔNG AST / language server / symbol graph (preserves zero-index moat). Mỗi heuristic case phải có test fixture (guards heuristic creep).
 
 ## 6. Success Metrics
 
