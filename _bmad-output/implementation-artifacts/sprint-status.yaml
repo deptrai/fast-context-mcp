@@ -1,7 +1,7 @@
 # Sprint Status — deepgrep v1.1 / v1.2
 # STATUS: backlog | ready-for-dev | in-progress | review | done | wont-do | gated
 
-last_updated: 2026-06-08 (Roadmap pivot to Context Engine — Epics 4 & 5 added)
+last_updated: 2026-06-08 (Architecture review — ADR-8/9/10, Epic 4 reordered)
 project_name: deepgrep
 
 development_status:
@@ -29,9 +29,10 @@ development_status:
   # Epic 4: Zero-index context engine. Vision shift from "search tool"
   # → "context engine". Same job as Augment, zero-index architecture.
   # See prd.md §9, epics.md Epic 4.
-  4-stable-output-contract: backlog       # Story 4.1: JSON contract
-  4-context-pack: backlog                 # Story 4.2: deepgrep_pack tool
-  4-ranking-roles: backlog                # Story 4.3: dedup + role labels
+  # Execution order (dependency-driven): 4.1 → 4.3 → 4.2 (see architecture.md ADR-8/9)
+  4-stable-output-contract: backlog       # Story 4.1: JSON contract (contract.mjs) — do FIRST
+  4-ranking-dedup: backlog                # Story 4.3: rank.mjs + dedup — do SECOND
+  4-context-pack: backlog                 # Story 4.2: deepgrep_pack + roles.mjs — do LAST
 
   # ── v2.0 (gated) — Optional Indexed Tier ─────────────────
   # Epic 5: NORTH STAR. Augment-style persistent context, local-first.

@@ -101,6 +101,72 @@ openai-backend.mjs (friendlyError layer)
 - Nếu làm FR8: expose `deepgrep_warm` tool (pattern giống status) thay vì `deepgrep warm` command.
 - **Khuyến nghị:** DEFER FR8 trừ khi đo được repo-map computation là bottleneck thật (hiện ~100ms cho medium repo — chưa phải vấn đề). Ship Story 3.1 trước, đánh giá lại sau.
 
+### ADR-8 (v1.3): Output contract is a single serialization module, not per-tool formatting
+
+**Context:** Epic 4 introduces JSON output alongside the existing text format. Without discipline this fans out into N tools × M formats, each drifting independently.
+
+**Decision:**
+- Add `output_format: "text" | "json"` param (default `"text"`) to `deepgrep_search`, `deepgrep_deep`, `deepgrep_get`. NO new tool for JSON.
+- All serialization lives in ONE new module `src/contract.mjs`:
+  ```
+  serializeSearchResult(result, opts, format) → string
+    ├─ "text" → existing _formatResult(...)  (unchanged, backward compat)
+    └─ "json" → toJsonContract(result, opts)
+  ```
+- Backend code (`core.mjs`, `openai-backend.mjs`) is NOT touched. The internal shape `{files, rg_patterns, _meta, error?}` already exists; contract.mjs only serializes it.
+
+**JSON contract (v1.0) — forward-compatible by design:**
+```js
+{
+  schema_version: "1.0",
+  files: [{ path, full_path, ranges, role?, score? }],
+  grep_keywords: [...],
+  meta: {
+    backend: "windsurf|openai",
+    mode: "quick|deep|escalated",
+    cache_hit: false,
+    retrieval: "lexical",      // forward-looking: "lexical|semantic|hybrid" in v2.0
+    index_used: false,         // forward-looking: true when Epic 5 indexed tier active
+    tree_depth, tree_size_kb, fell_back
+  }
+}
+```
+
+**Why `retrieval` + `index_used` now:** they are always `"lexical"`/`false` today, but reserving them means the v2.0 indexed tier (Epic 5) is a non-breaking addition, not a contract bump. Cheap to add now, expensive to retrofit after agents depend on the schema.
+
+**Trade-off:** one extra module + a versioned schema upfront. Accepted — it is the single seam every present and future backend serializes through. `schema_version` is the escape hatch if a breaking change ever becomes unavoidable.
+
+### ADR-9 (v1.3): `deepgrep_pack` is a thin orchestrator over readSnippets, with 4 binding constraints
+
+**Context:** Context Pack (Story 4.2) is the highest architectural-risk item in Epic 4 — easy to implement, easy to design into long-term debt. These four decisions are binding before code.
+
+**1. New tool, not a hidden mode.** `deepgrep_pack` is registered as a 5th tool (pattern like `deepgrep_get`). It MUST reuse `readSnippets` + `formatSnippetToolOutput` (Story 3.1) — wrapping with role/ranking/budget, NEVER duplicating snippet I/O. If pack reimplements file reading, the design is wrong.
+
+**2. Budget unit is `max_chars` (deterministic).** `max_lines` is accepted as a UX hint but `max_chars` is the enforced budget — it does not depend on a tokenizer and is reproducible across models. Output never exceeds `max_chars`; dropped snippets are reported explicitly (e.g. `[N snippets omitted to fit budget]`).
+
+**3. Role labeling lives in `src/roles.mjs` — pure function, heuristic-bounded.**
+   ```
+   labelRole({ path, content, query, matches }) → "implementation|caller|config|test|docs|type"
+   ```
+   Heuristics allowed: path patterns (`/test/`, `.test.`, `__tests__/`, `config`, `routes/`), filename, match density. STRICTLY FORBIDDEN: tree-sitter, AST parsing, import/call graph resolution. The moment pack parses symbols it has entered Serena territory and broken the zero-index moat. Every heuristic case MUST ship with a test fixture proving its value — no fixture, no case (guards against heuristic creep).
+
+**4. Stateless (inherits ADR-6).** Input is `{query?, files?, ranges?, max_chars, max_lines?}`. No session linkage search→pack. When `files/ranges` supplied directly, pack is pure-local (no API key) — same posture as `deepgrep_get`.
+
+**Trade-off:** a 5th tool grows the surface agents must learn. Accepted because pack's job (budgeted multi-file assembly + roles) is genuinely distinct from `deepgrep_get`'s job (verbatim range read). If it were merely "get with labels" it would be a param, not a tool — the budget+ranking+role composition justifies the separation.
+
+### ADR-10 (v2.0, gated): Indexed tier needs a lifecycle ADR before any code
+
+**Context:** Epic 5 is not "add an index" — it introduces filesystem-level state where today there is none. This ADR is a placeholder reminder, NOT a decision.
+
+**When the Epic 5 gate passes, a dedicated ADR MUST answer before implementation:**
+- Who triggers indexing — user (`deepgrep index`), agent, or auto? (recommendation: explicit user command, never auto)
+- Staleness detection — mtime hash measured ~45ms (see Story 3.2 decision record); is it sufficient, or is a content hash / watch needed?
+- Cleanup & orphans — `.deepgrep/` must be gitignored by default; what removes it when the repo is deleted?
+- Multiprocess ownership — two MCP clients on the same repo: who owns/locks the index?
+- Security — index contains code embeddings; never commit, warn on creation.
+
+**Binding now (so Epic 4 doesn't block Epic 5):** the ADR-8 contract already reserves `retrieval` + `index_used` meta fields. The indexed tier is a hidden backend behind the SAME contract and the SAME tools — agents must not need to know whether retrieval was indexed or on-demand.
+
 ## 4. Module mới (target)
 
 ```

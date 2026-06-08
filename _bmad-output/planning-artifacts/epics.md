@@ -174,39 +174,48 @@ so that my first real query returns instantly.
 
 **Theme:** Assemble task-specific code context under an explicit token budget — without indexing.
 
-### Story 4.1: Stable structured output contract
+**Architecture constraints:** ADR-8 (single contract module), ADR-9 (pack = thin orchestrator, 4 binding constraints), ADR-10 (forward-compat for indexed tier). See architecture.md.
+
+**Execution order (dependency-driven):** 4.1 → 4.3 → 4.2. Contract first (4.1), then ranking/roles produce the structured fields (4.3), then pack assembles ranked+labeled input under budget (4.2). Building pack before ranking would force inline ranking that contradicts 4.3.
+
+### Story 4.1: Stable structured output contract  [do FIRST]
 
 As an agent builder,
 I want stable JSON/metadata output from deepgrep tools,
 so that I can reliably compose deepgrep with other tools and agents.
 
 **Acceptance Criteria:**
-- **Given** any deepgrep tool call, **When** `output_format=json`, **Then** returns stable schema: `{files[], grep_keywords[], meta{backend,mode,cache_hit}}`
-- **Given** existing text mode, **Then** unchanged (backward compat)
+- **Given** any search/deep/get call, **When** `output_format=json`, **Then** returns the ADR-8 schema incl. `schema_version`, `files[]`, `grep_keywords[]`, `meta{backend,mode,cache_hit,retrieval,index_used,...}`
+- **Given** the forward-looking fields, **Then** `retrieval="lexical"` and `index_used=false` always (reserved for Epic 5 — non-breaking)
+- **Given** existing text mode (default), **Then** unchanged (backward compat)
+- **Given** all serialization, **Then** it lives in ONE module `src/contract.mjs` — no per-tool JSON branches
 - **Given** JSON output, **Then** covered by tests for search + get
 
-### Story 4.2: Context Pack mode (`deepgrep_pack`)
+### Story 4.3: Result ranking + dedup  [do SECOND]
+
+As a developer,
+I want results ordered by usefulness with duplicates merged,
+so that the first few files are usually enough.
+
+**Acceptance Criteria:**
+- **Given** multiple results, **Then** duplicate file paths merged; overlapping ranges in same file merged
+- **Given** a query not asking for tests, **Then** source preferred over test/docs (path heuristic: `/test/`, `.test.`, `__tests__/`)
+- **Given** deep-mode results (LLM already ordered), **Then** rerank only applies for multi-file results or explicit `rerank=true` — default trusts LLM order
+- **Given** ranking logic, **Then** it lives in pure module `src/rank.mjs` (testable in isolation, no tool-handler coupling)
+
+### Story 4.2: Context Pack (`deepgrep_pack`)  [do LAST]
 
 As an AI agent,
 I want a compact assembled context pack from search results,
 so that I can answer or edit without reading whole files.
 
-**Acceptance Criteria:**
-- **Given** a query (or files/ranges from prior search), **When** calling `deepgrep_pack`, **Then** returns top snippets grouped + ordered, within line/char budget
-- **Given** `max_lines`/`max_chars` budget, **Then** output never exceeds it; dropped context is reported
-- **Given** files/ranges supplied directly, **Then** pure local — no API key required
-- **Given** output, **Then** each snippet has a role label (implementation/caller/config/test/docs)
-
-### Story 4.3: Result ranking, dedup, role labeling
-
-As a developer,
-I want results ordered by usefulness and labeled by role,
-so that the first few snippets are usually enough.
-
-**Acceptance Criteria:**
-- **Given** multiple results, **Then** duplicate files merged, ranked by relevance
-- **Given** a query not asking for tests, **Then** source preferred over test/docs files
-- **Given** each result, **Then** labeled implementation/caller/config/test/docs via heuristics (path + match proximity), NO language server / symbol graph
+**Acceptance Criteria (bound by ADR-9):**
+- **Given** a query (or files/ranges from prior search), **When** calling `deepgrep_pack`, **Then** returns top snippets grouped by role + ordered (via `src/rank.mjs`), within budget
+- **Given** `max_chars` budget (enforced) and optional `max_lines` (hint), **Then** output never exceeds `max_chars`; dropped snippets reported explicitly
+- **Given** files/ranges supplied directly, **Then** pure local — no API key required (inherits ADR-6 stateless posture)
+- **Given** each snippet, **Then** role label via `src/roles.mjs` heuristic (implementation/caller/config/test/docs/type) — path + filename + match-density only, NO AST / language server
+- **Given** implementation, **Then** reuses `readSnippets` + `formatSnippetToolOutput` (Story 3.1), never duplicates snippet I/O
+- **Given** each role heuristic case, **Then** it ships with a test fixture (guards heuristic creep)
 
 ---
 
