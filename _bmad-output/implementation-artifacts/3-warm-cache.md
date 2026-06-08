@@ -2,7 +2,7 @@
 story_id: "3.2"
 story_key: "3-warm-cache"
 epic: 3
-status: ready-for-dev
+status: wont-do
 created: 2026-06-08
 baseline_commit: 0f1ed6901fcaa7e375b69e67452c5456585c4362
 ---
@@ -117,3 +117,41 @@ Repo `test/*.test.mjs` import from `../deepgrep/src/`. In the worktree the `deep
 
 1. Is repo-map-only warming enough value to ship, given measured ~100ms build (ADR-7 flags this as possibly not worth it)? If timing on the target repos is consistently <100ms, recommend keeping the tool but documenting it as optional.
 2. Should warm state have a TTL / invalidation, or is it fine to let the existing mtime-hash cache-miss path handle staleness? (Recommendation: rely on mtime hash — no separate TTL.)
+
+---
+
+## Decision Record (2026-06-08, post-architecture review)
+
+**Status: wont-do** — closed without implementation.
+
+### Why
+
+Architecture review (Winston, baseline `0f1ed69`) ran ADR-7's gate against measured data on this repo (`fast-context-mcp`, 433 files, depth=3, default excludes):
+
+| Operation | Cold (ms) | Cacheable by warm? |
+|-----------|-----------|---------------------|
+| `getRepoMap` | ~15 | ✅ yes |
+| `computeMtimeHash` | ~45 | ❌ no (used as freshness check) |
+| **Total** | **~60** | **net win after warm: ~15ms** |
+
+ADR-7 condition: *"DEFER unless repo-map computation is a real bottleneck."* At ~15ms savings, sub-perceptible vs. the 3–30s API call that follows, the gate fails.
+
+### Architectural concerns that compounded the decision
+
+1. **Warm caches the wrong layer.** 75% of the cold cost is `computeMtimeHash`, which is a freshness primitive — caching it defeats its purpose. Warm only saves the cheap part.
+2. **Option A in spec breaks `getRepoMap` purity.** Adding module-level state in `shared.mjs` is global mutation for a single consumer's benefit. Violates Rule of Three.
+3. **AC6 has a silent-correctness hole.** Reusing a cached repo map after files are added/removed between `warm` and `search` would feed stale tree text to the LLM. Mtime hash protects the *result* cache but not the prompt's tree map.
+4. **No verifiable user-facing improvement.** 15ms is below jitter for any integration assertion or user perception.
+5. **Triggers UX friction.** Requires the user/agent to remember `warm` before `search` — replaces one friction with another.
+
+### What would re-open this
+
+- Real telemetry showing first-query latency complaints, OR
+- An AI-agent flow measured to call `deepgrep_search` ≥3 times in <5s where mtime-hash dominates wall-clock.
+
+In that case, the right shape is **not** `deepgrep_warm` but a **short-TTL mtime cache inside `cache.mjs`** (caches the expensive 45ms portion, no new tool, no purity break, lives in the module that already owns caching). Capture as a new story when triggered, do not pre-write a spec.
+
+### Sprint-status implication
+
+`3-warm-cache: wont-do`. Epic 3 has one story shipped (3.1 `deepgrep_get`) and one closed by data (3.2). Epic 3 can be marked `done` — its core value (token-efficient retrieval) is fully delivered.
+
