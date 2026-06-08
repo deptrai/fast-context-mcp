@@ -1,7 +1,7 @@
 # Sprint Status — deepgrep v1.1 / v1.2
-# STATUS: backlog | ready-for-dev | in-progress | review | done | wont-do
+# STATUS: backlog | ready-for-dev | in-progress | review | done | wont-do | gated
 
-last_updated: 2026-06-08 (Story 3.2 closed as wont-do — see spec)
+last_updated: 2026-06-08 (Roadmap pivot to Context Engine — Epics 4 & 5 added)
 project_name: deepgrep
 
 development_status:
@@ -25,3 +25,18 @@ development_status:
   # Story 3.2: Warm cache (P1 optional)
   # Covers: FR8 — precompute repo map + cache warming
   3-warm-cache: wont-do
+  # ── v1.3 (backlog) — Portable Context Engine ─────────────
+  # Epic 4: Zero-index context engine. Vision shift from "search tool"
+  # → "context engine". Same job as Augment, zero-index architecture.
+  # See prd.md §9, epics.md Epic 4.
+  4-stable-output-contract: backlog       # Story 4.1: JSON contract
+  4-context-pack: backlog                 # Story 4.2: deepgrep_pack tool
+  4-ranking-roles: backlog                # Story 4.3: dedup + role labels
+
+  # ── v2.0 (gated) — Optional Indexed Tier ─────────────────
+  # Epic 5: NORTH STAR. Augment-style persistent context, local-first.
+  # GATED — do not start until ≥2 conditions pass (see prd.md §9).
+  # If gate never passes, this is intentionally not built.
+  5-local-incremental-index: gated        # Story 5.1
+  5-multi-repo-context: gated             # Story 5.2 (placeholder)
+

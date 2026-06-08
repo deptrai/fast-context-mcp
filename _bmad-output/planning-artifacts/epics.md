@@ -165,3 +165,91 @@ so that my first real query returns instantly.
 - Expose dưới dạng **MCP tool `deepgrep_warm`**, KHÔNG phải CLI subcommand (deepgrep là stdio MCP server, không phải CLI app).
 - **DEFER** trừ khi đo được repo-map computation là bottleneck thật (hiện ~100ms cho medium repo). Ship Story 3.1 trước, đánh giá lại sau.
 - Xem `architecture.md` ADR-7.
+
+---
+
+## Epic 4: Portable Context Engine (v1.3) — 🔲 Backlog
+
+> Vision shift (2026-06-08): deepgrep evolves from "semantic search tool" → "zero-index context engine". Same job as Augment Context Engine, different architecture: on-demand assembly, no persistent index. See prd.md §9.
+
+**Theme:** Assemble task-specific code context under an explicit token budget — without indexing.
+
+### Story 4.1: Stable structured output contract
+
+As an agent builder,
+I want stable JSON/metadata output from deepgrep tools,
+so that I can reliably compose deepgrep with other tools and agents.
+
+**Acceptance Criteria:**
+- **Given** any deepgrep tool call, **When** `output_format=json`, **Then** returns stable schema: `{files[], grep_keywords[], meta{backend,mode,cache_hit}}`
+- **Given** existing text mode, **Then** unchanged (backward compat)
+- **Given** JSON output, **Then** covered by tests for search + get
+
+### Story 4.2: Context Pack mode (`deepgrep_pack`)
+
+As an AI agent,
+I want a compact assembled context pack from search results,
+so that I can answer or edit without reading whole files.
+
+**Acceptance Criteria:**
+- **Given** a query (or files/ranges from prior search), **When** calling `deepgrep_pack`, **Then** returns top snippets grouped + ordered, within line/char budget
+- **Given** `max_lines`/`max_chars` budget, **Then** output never exceeds it; dropped context is reported
+- **Given** files/ranges supplied directly, **Then** pure local — no API key required
+- **Given** output, **Then** each snippet has a role label (implementation/caller/config/test/docs)
+
+### Story 4.3: Result ranking, dedup, role labeling
+
+As a developer,
+I want results ordered by usefulness and labeled by role,
+so that the first few snippets are usually enough.
+
+**Acceptance Criteria:**
+- **Given** multiple results, **Then** duplicate files merged, ranked by relevance
+- **Given** a query not asking for tests, **Then** source preferred over test/docs files
+- **Given** each result, **Then** labeled implementation/caller/config/test/docs via heuristics (path + match proximity), NO language server / symbol graph
+
+---
+
+## Epic 5: Optional Indexed Tier (v2.0) — 🔒 Gated / Aspirational
+
+> NORTH STAR, NOT BACKLOG. An Augment-style persistent context engine, but local-first and opt-in. Do NOT start until the gate passes. See prd.md §9 North Star.
+
+**Gate (≥2 must be measurably true before opening):**
+1. Zero-index measured too slow / recall-poor on large repos
+2. Repeated need for multi-repo or persistent project memory
+3. Agent flows need cross-session context
+4. Repo size exceeds on-demand embedding practicality
+
+**If gate never passes, this epic is never built — and that is an acceptable outcome.** The zero-index moat is the priority.
+
+### Story 5.1 (gated): Local-first incremental index
+
+As a user with a large repo where zero-index is too slow,
+I want an opt-in local index,
+so that retrieval stays fast without sending code to a cloud service.
+
+**Acceptance Criteria (draft, refine at gate time):**
+- **Given** `deepgrep index`, **Then** builds local `.deepgrep/` index incrementally (mtime-based)
+- **Given** indexed mode, **Then** same output contract as zero-index (hidden backend)
+- **Given** no index, **Then** zero-index mode still works as default (non-breaking)
+- **Given** BYOM, **Then** embeddings use caller-provided model, no lock-in
+- **Constraint:** still NO symbol graph / refactor / editing (Serena territory)
+
+### Story 5.2 (gated): Multi-repo context (maybe)
+
+As a developer working across related repos,
+I want context assembly to span multiple local repos,
+so that cross-repo tasks have relevant context.
+
+**Status:** Placeholder. Define only if multi-repo demand is real at gate time.
+
+## Roadmap Summary (updated 2026-06-08)
+
+| Version | Theme | Status |
+|---------|-------|--------|
+| v1.1 | Core Intelligence + Developer Experience (Epics 1-2) | ✅ Done |
+| v1.2 | Token-Efficient Retrieval — `deepgrep_get` (Epic 3) | ✅ 3.1 done, 3.2 wont-do |
+| v1.3 | Portable Context Engine (Epic 4) | 🔲 Backlog |
+| v1.5 | Distribution: CLI parity, single binary, integration recipes | 🔲 Future |
+| v2.0 | Optional Indexed Tier (Epic 5) | 🔒 Gated / aspirational |
+

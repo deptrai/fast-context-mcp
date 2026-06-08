@@ -103,3 +103,70 @@ deepgrep v1.0 đã ship: MCP server semantic code search với 2 mode (fast SWE-
 - Gap cần đóng: deepgrep thiếu assembled context (agent phải read_file thêm sau search)
 - `deepgrep_get` (FR7) đóng gap này theo cách token-efficient: agent chủ động chọn đoạn cần đọc
 - Xem đầy đủ: `_bmad-output/planning-artifacts/research-deepgrep-v1.2.md`
+
+---
+
+## 9. Vision Update (2026-06-08): Zero-index Context Engine
+
+### Positioning (updated)
+
+> **deepgrep is a zero-index context engine for AI agents.**
+>
+> It assembles task-specific code context from any repo without indexing, language servers, or enterprise setup — returning precise snippets under an explicit token budget via MCP or CLI.
+
+**Tagline:** Context without indexing.
+
+**Previous positioning** ("zero-setup semantic code search") remains true but is now a subset of the broader vision: deepgrep evolves from search tool → context engine.
+
+### Relationship to Augment Context Engine
+
+Augment and deepgrep solve the same job-to-be-done (assemble relevant coding context) but with fundamentally different architectures:
+
+| Dimension | Augment | deepgrep |
+|---|---|---|
+| Context model | Persistent indexed context engine | On-demand zero-index context engine |
+| Target | Enterprise complex codebases | Agents, OSS, small teams, local repos |
+| Setup | Platform deployment + indexing | MCP/CLI, immediate |
+| Output | IDE/assistant context | Structured snippets/context packs |
+| Model | Proprietary/managed | BYOM |
+| Strength | Scale + integrated automation | Portability + token efficiency + composability |
+
+deepgrep does NOT compete on enterprise infra. It competes on the **job**: "give me the right context for this task."
+
+### North Star — v2.0 Indexed Tier (gated, aspirational)
+
+v2.0 MAY add an optional indexed tier for large repos where zero-index hits measurable recall/perf limits. This is gated:
+
+**Conditions to open (at least 2 must be true):**
+1. Real users report zero-index too slow/recall-poor on large repos (measured)
+2. Repeated need for multi-repo or persistent project memory
+3. Agent flows need context across sessions, not just per-query
+4. Repo size exceeds threshold where on-demand embedding is impractical
+
+**If opened, architecture:**
+- Local-first index (`.deepgrep/` dir), not cloud service
+- Opt-in, incremental (`deepgrep index` command)
+- BYOM embeddings, no lock-in
+- Same output contract — index is hidden backend, agents don't care
+- Still no symbol graph / refactor (Serena territory)
+
+**If gate never passes:** deepgrep stays pure zero-index. That's fine — the moat is preserved.
+
+### What deepgrep explicitly does NOT do
+
+- Symbol graph / language server indexing (→ Serena)
+- Refactoring / editing / debugging tools (→ Serena)
+- Persistent agent memory (→ Serena)
+- Enterprise multi-tenant platform (→ Augment/Sourcegraph)
+- Org governance / dashboard / SSO
+- Managed cloud indexing service
+- Vector DB as default (breaks zero-index moat)
+
+## 10. Metrics (updated for Context Engine)
+
+- M1. deepgrep_search response time < 10s median (zero-index). ✅ v1.1
+- M2. Cache hit < 100ms. ✅ v1.1
+- M3. Token cost per task reduced when using deepgrep_get vs read_file. ✅ v1.2
+- M4. Context Pack returns relevant snippets within budget (recall@3 ≥ 70% on internal benchmark). 🔲 v1.3
+- M5. Agent integration recipes adopted by ≥ 3 distinct MCP clients. 🔲 v1.5
+
