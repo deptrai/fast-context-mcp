@@ -5,9 +5,9 @@ stepsCompleted: ["step-01-document-discovery", "step-02-prd-analysis", "step-03-
 overallStatus: "READY"
 issuesFound: { critical: 0, major: 0, minor: 3 }
 documentsAssessed:
-  - "_bmad-output/planning-artifacts/prd-deepgrep-v1.1.md"
-  - "_bmad-output/planning-artifacts/architecture-deepgrep-v1.1.md"
-  - "_bmad-output/planning-artifacts/epics-deepgrep-v1.1.md"
+  - "_bmad-output/planning-artifacts/prd.md"
+  - "_bmad-output/planning-artifacts/architecture.md"
+  - "_bmad-output/planning-artifacts/epics.md"
 documentsExcluded:
   - "_bmad-output/planning-artifacts/prd.md (old fast-context-mcp project)"
   - "_bmad-output/planning-artifacts/architecture.md (old fast-context-mcp project)"
@@ -25,9 +25,9 @@ documentsExcluded:
 
 | Type | File | Status |
 |------|------|--------|
-| PRD | `prd-deepgrep-v1.1.md` | ✅ living-document, có FR7/FR8 cho v1.2 |
-| Architecture | `architecture-deepgrep-v1.1.md` | ✅ có ADR-6, ADR-7 cho v1.2 |
-| Epics & Stories | `epics-deepgrep-v1.1.md` | ✅ Epic 3 (Story 3.1, 3.2) |
+| PRD | `prd.md` | ✅ living-document, có FR7/FR8 cho v1.2 |
+| Architecture | `architecture.md` | ✅ có ADR-6, ADR-7 cho v1.2 |
+| Epics & Stories | `epics.md` | ✅ Epic 3 (Story 3.1, 3.2) |
 | UX | — | N/A (CLI/MCP tool, không có UI) |
 
 ### Documents excluded (dự án cũ, KHÔNG phải sharded duplicate)
@@ -38,7 +38,7 @@ documentsExcluded:
 | `architecture.md` | Architecture dự án gốc |
 | `epics.md` | Epics dự án gốc (FR1-FR17 của fast-context-mcp) |
 
-**Quyết định:** Đây là 2 thế hệ dự án khác nhau (`fast-context-mcp` cũ → `deepgrep` mới), KHÔNG phải whole-vs-sharded duplicate. Dùng bộ `*-deepgrep-v1.1.md`. Giữ nguyên file cũ (không xóa) làm lịch sử, chỉ loại khỏi phạm vi đánh giá v1.2.
+**Quyết định:** Đây là 2 thế hệ dự án khác nhau (`fast-context-mcp` cũ → `deepgrep` mới), KHÔNG phải whole-vs-sharded duplicate. Dùng bộ canonical `prd.md`, `architecture.md`, `epics.md` làm source of truth. Các file suffixed `*-deepgrep-v1.1.md` đã được merge và xóa để tránh plan drift.
 
 
 ## Step 2: PRD Analysis

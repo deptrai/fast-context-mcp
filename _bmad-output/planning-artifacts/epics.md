@@ -1,214 +1,167 @@
 ---
-stepsCompleted: ["step-01-validate-prerequisites", "step-02-design-epics", "step-03-create-stories"]
-inputDocuments: ["_bmad-output/planning-artifacts/prd.md"]
+stepsCompleted: ["validate-prerequisites", "design-epics", "create-stories"]
+inputDocuments:
+  - "_bmad-output/planning-artifacts/prd.md"
+  - "deepgrep/ROADMAP-v1.1.md"
+  - "_bmad-output/planning-artifacts/research-deepgrep-v1.2.md"
+lastUpdated: 2026-06-07
 ---
 
-# fast-context-mcp - Epic Breakdown
-
-## Overview
-
-This document decomposes the PRD requirements for `fast-context-mcp` into implementable stories. FR1–FR11 (core search, deep search, credentials) are **already implemented** in the current codebase; the epics below focus on the **roadmap requirements (FR12–FR17)** and related NFRs that represent actual development work.
+# deepgrep v1.1 — Epic Breakdown
 
 ## Requirements Inventory
 
-### Functional Requirements
+- FR1: Auto-escalation quick → deep
+- FR2: Cache verify & hoàn thiện
+- FR3: Better error UX
+- FR4: Health-check tool `deepgrep_status`
+- FR5: Query refinement (quick mode)
+- FR6: Single binary build
+- NFR1-4: latency, no heavy deps, backward compat
 
-FR1: Tool `fast_context_search` trả file + line ranges + grep keywords từ query ngôn ngữ tự nhiên. *(implemented)*
-FR2: Tham số `tree_depth`, `max_turns`, `max_results`, `exclude_paths`. *(implemented)*
-FR3: Adaptive tree-depth fallback khi cây > 250KB. *(implemented)*
-FR4: Thực thi lệnh cục bộ song song + truncate output. *(implemented)*
-FR5: Path-traversal protection khi parse answer XML. *(implemented)*
-FR6: Tool `deep_context_search` dùng OpenAI-compatible backend, model cấu hình được. *(implemented)*
-FR7: Response validation + auto-retry khi malformed. *(implemented)*
-FR8: Forced `tool_choice` ép answer ở turn cuối. *(implemented)*
-FR9: Tool `extract_windsurf_key` đa nền tảng (Devin Desktop + Windsurf). *(implemented)*
-FR10: Auto-discover key, hỗ trợ nhiều prefix. *(implemented)*
-FR11: Cấu hình qua env vars. *(implemented)*
-FR12: Đồng bộ README với code thật (sql.js, model mặc định, deep_context_search, Devin Desktop). *(roadmap)*
-FR13: Tách shared code (prompt template, getRepoMap, parseAnswer) ra module chung. *(roadmap)*
-FR14: Caching kết quả theo hash(query + tree state). *(roadmap)*
-FR15: Option trả kèm code snippet (không chỉ line ranges). *(roadmap)*
-FR16: Test suite cho protobuf, answer parsing + path guard, key extraction fallback. *(roadmap)*
-FR17: Đồng bộ version server.mjs ↔ package.json + bump. *(roadmap)*
+## FR Coverage Map
 
-### NonFunctional Requirements
-
-NFR1: Hiệu năng — fast mode < 5s, deep mode < 90s, chạy lệnh song song.
-NFR2: Bảo mật — không log key, path guard, cân nhắc bỏ auto-disable TLS verification.
-NFR3: Tương thích — macOS/Windows/Linux, Node >= 18, không cần dependency hệ thống.
-NFR4: Khả năng phục hồi — phân loại lỗi, auto-retry, context trimming, combo fallback.
-NFR5: Bảo trì — không trùng code, có test, comment nhất quán English.
-NFR6: Quan sát được — metadata chẩn đoán [config]/[diagnostic].
-
-### Additional Requirements
-
-- Repositioning: định vị lại thành "multi-backend AI code search", giảm nhấn mạnh Windsurf (OQ1=yes).
-- License: thuần MIT, không monetize (OQ2).
-
-### UX Design Requirements
-
-N/A — CLI/MCP stdio server, không có UI.
-
-### FR Coverage Map
-
-| Requirement | Epic.Story |
-|---|---|
-| FR12, FR17 | 1.1 |
-| FR13, NFR5 | 1.2 |
-| NFR5 | 1.3 |
-| FR14, NFR1 | 2.1 |
-| FR15 | 2.2 |
-| FR16, NFR5 | 3.1 |
-| NFR2 | 3.2 |
-| Repositioning, FR13 | 3.3 |
+| FR | Story | Status |
+|----|-------|--------|
+| FR2, NFR1 | 1.1 | ✅ done |
+| FR1, FR5, NFR2 | 1.2 | ✅ done |
+| FR3 | 1.3 | ✅ done |
+| FR4 | 2.1 | ✅ done |
+| FR6 | 2.2 | ✅ done |
+| FR7 | 3.1 | 🔲 backlog |
+| FR8 | 3.2 | 🔲 backlog |
 
 ## Epic List
 
-- **Story 1: Technical Debt Cleanup & Refactor** — README sync, extract shared module, code cleanup, version bump. Tất cả trong 1 session.
-- **Story 2: Search Enhancement** — Result caching + optional code snippets. Tất cả trong 1 session.
-- **Story 3: Resilience & Architecture** — Unit tests, TLS hardening, unified backend interface. Tất cả trong 1 session.
+- **Epic 1: Core Intelligence & Reliability (P0)** — cache, auto-escalation, error UX. ✅ **Done**
+- **Epic 2: Developer Experience (P1)** — health-check tool, single binary. ✅ **Done**
+- **Epic 3: Token-Efficient Retrieval (v1.2)** — deepgrep_get two-stage retrieval, warm cache. 🔲 **Backlog**
 
-**Thứ tự implement:** Story 1 → Story 2 → Story 3 (3 phụ thuộc shared.mjs từ Story 1).
-
----
-
-## Epic 1: Technical Debt Cleanup & Documentation Sync
-
-Đưa tài liệu và cấu trúc code về đúng trạng thái thực tế sau khi thêm Devin Desktop support + deep_context_search, loại bỏ trùng lặp và nợ kỹ thuật để dev sau này không bị lạc.
-
-### Story 1.1: Sync README and version with actual implementation
-
-As a developer evaluating fast-context-mcp,
-I want the README and version metadata to match the real code,
-So that I can trust the docs and configure the tool correctly.
-
-**Acceptance Criteria:**
-
-**Given** README hiện ghi `better-sqlite3`
-**When** tôi đọc phần Dependencies
-**Then** nó phải ghi `sql.js` (đúng với package.json)
-**And** bảng env vars phải có `FC_DEEP_BASE_URL`, `FC_DEEP_API_KEY`, `FC_DEEP_MODEL`
-**And** mục Setup phải mô tả Devin Desktop path (không chỉ Windsurf)
-**And** model mặc định ghi đúng (`MODEL_SWE_1_6_SLOW`)
-**And** mục MCP Tools phải có `deep_context_search`
-
-**Given** server.mjs ghi `version: "1.2.0"` còn package.json là `1.2.1`
-**When** đồng bộ version
-**Then** cả hai phải khớp và bump lên `1.3.0` (do thêm tính năng mới)
-
-### Story 1.2: Extract shared code into a common module
-
-As a maintainer,
-I want the duplicated logic between core.mjs and openai-backend.mjs in one place,
-So that prompt/parsing changes only need to be made once.
-
-**Acceptance Criteria:**
-
-**Given** `SYSTEM_PROMPT_TEMPLATE`, `getRepoMap`, `_parseAnswer`, `_excludePatternToRegex` bị copy ở cả 2 file
-**When** tạo module `src/shared.mjs`
-**Then** các hàm dùng chung được export từ `shared.mjs`
-**And** `core.mjs` và `openai-backend.mjs` import từ `shared.mjs` thay vì định nghĩa lại
-**And** không còn circular import
-**And** chạy lại benchmark cũ cho kết quả tương đương (không regression)
-
-### Story 1.3: Code cleanup — comments and unused imports
-
-As a maintainer,
-I want consistent English comments and no dead imports,
-So that the codebase is clean and lint-friendly.
-
-**Acceptance Criteria:**
-
-**Given** core.mjs có comment tiếng Trung (phần compensation logic)
-**When** dọn cleanup
-**Then** mọi comment chuyển sang English nhất quán
-**And** các import thừa (`existsSync`, `statSync`, `join` trong core.mjs) được xóa
-**And** `node --check` pass cho tất cả file trong src/
+**Thứ tự v1.1:** Story 1.1 → 1.2 → 1.3 → 2.1 → 2.2 (tất cả done)  
+**Thứ tự v1.2:** Story 3.1 → 3.2 (optional)
 
 ---
 
-## Epic 2: Search Quality & Performance
+## Epic 1: Core Intelligence & Reliability
 
-Tăng hiệu quả tìm kiếm và giảm chi phí/round-trip thông qua caching và trả kèm nội dung code.
+### Story 1.1: Verify & complete result cache
 
-### Story 2.1: Result caching by query + tree state
-
-As an AI agent making repeated searches,
-I want identical queries on an unchanged codebase to return cached results,
-So that I save time and API tokens (especially in deep mode).
+As a daily user,
+I want identical queries on an unchanged codebase to return instantly from cache,
+so that I save time and API tokens.
 
 **Acceptance Criteria:**
+- **Given** một query đã chạy thành công, **When** chạy lại y hệt (cùng project_path + model, codebase chưa đổi), **Then** trả từ cache, KHÔNG gọi API, < 100ms
+- **Given** file trong project thay đổi (mtime), **When** chạy lại query, **Then** cache miss → gọi API
+- **Given** output, **Then** metadata chứa `cache_hit: true|false`
+- **Given** `DEEPGREP_CACHE_DISABLED=1`, **Then** cache bị bypass hoàn toàn
+- **Given** `DEEPGREP_CACHE_TTL_MS=N`, **Then** TTL áp dụng đúng
 
-**Given** một query đã chạy trên codebase chưa thay đổi
-**When** chạy lại cùng query + cùng project_path
-**Then** kết quả được trả từ cache, không gọi API model
-**And** cache key = hash(query + model + tree snapshot)
-**And** cache invalidate khi file trong project thay đổi (mtime/hash)
-**And** có env var để tắt cache (`FC_CACHE_DISABLED`)
-**And** cache có TTL hợp lý (mặc định cấu hình được)
+### Story 1.2: Auto-escalation quick → deep
 
-### Story 2.2: Optional code snippets in output
-
-As a caller AI,
-I want the option to receive the actual code lines, not just line ranges,
-So that I avoid an extra round-trip to read the files.
+As a user who doesn't want to pick tools,
+I want deepgrep to automatically use deep mode for complex queries,
+so that I always get good results without choosing.
 
 **Acceptance Criteria:**
+- **Given** query ≥3 mệnh đề hoặc chứa keywords multi-hop (trace/flow/across/from...to), **When** gọi deepgrep_search, **Then** tự escalate sang deep mode
+- **Given** quick mode trả 0 results, **When** auto_escalate=true, **Then** retry bằng deep mode (1 lần)
+- **Given** query đơn giản 1 vế, **Then** chạy quick, KHÔNG escalate (không tăng latency)
+- **Given** `auto_escalate=false`, **Then** không bao giờ escalate
+- **Given** output sau escalation, **Then** ghi rõ "[escalated to deep mode]"
+- **Given** query non-English/mơ hồ, **Then** gợi ý rephrase HOẶC escalate (FR5)
 
-**Given** tham số `include_snippets: true`
-**When** search trả kết quả
-**Then** mỗi file kèm nội dung các dòng trong range (đã truncate hợp lý)
-**And** mặc định `include_snippets: false` (giữ behavior cũ)
-**And** snippet tôn trọng giới hạn độ dài để không làm response quá lớn
+### Story 1.3: Better error UX
+
+As a user hitting rate limits or auth errors,
+I want clear actionable error messages,
+so that I know how to fix the problem.
+
+**Acceptance Criteria:**
+- **Given** HTTP 429, **Then** message: "Model {X} rate limited — retrying / try DEEPGREP_MODEL=deep-search"
+- **Given** HTTP 403, **Then** message gợi ý dùng combo deep-search hoặc model khác
+- **Given** không có key, **Then** signup URL (giữ behavior v1.0)
+- **Given** deep model fail sau retry, **Then** suggest 1 fallback model cụ thể
 
 ---
 
-## Epic 3: Resilience & Testing
+## Epic 2: Developer Experience
 
-Đảm bảo độ bền vững dài hạn: test coverage, bảo mật, và kiến trúc multi-backend thống nhất giảm phụ thuộc Windsurf.
+### Story 2.1: Health-check tool `deepgrep_status`
 
-### Story 3.1: Unit test suite
-
-As a maintainer,
-I want unit tests for the critical pure-logic modules,
-So that refactors don't silently break protocol encoding or parsing.
+As a new user setting up deepgrep,
+I want a status command to verify my config,
+so that I can debug setup without guessing.
 
 **Acceptance Criteria:**
+- **Given** tool `deepgrep_status` được gọi, **Then** trả về: key hợp lệ? (ping test), models available (list + test 1-2), Devin Desktop installed?, config hiện tại (URL/model/fast_backend)
+- **Given** key sai/thiếu, **Then** báo rõ + signup URL
+- **Given** Devin không cài, **Then** note fast mode cần openai backend
 
-**Given** chưa có test nào
-**When** thêm test framework (node:test built-in)
-**Then** có test cho `protobuf.mjs` (encode/decode round-trip, varint, frames)
-**And** có test cho answer XML parsing + path-traversal guard (`_parseAnswer`)
-**And** có test cho `extract-key` multi-path fallback (Devin → Windsurf)
-**And** `npm test` chạy được và pass
-**And** thêm script `test` vào package.json
+### Story 2.2: Single binary build
 
-### Story 3.2: Security hardening — TLS verification opt-in
-
-As a security-conscious user,
-I want TLS certificate verification to stay on by default,
-So that the tool is not silently vulnerable to MITM.
+As a user without Node,
+I want a standalone binary,
+so that I can run deepgrep without installing Node.
 
 **Acceptance Criteria:**
+- **Given** `bun build --compile`, **Then** tạo binary chạy được không cần Node
+- **Given** CI release, **Then** build binary cho macOS/Linux/Windows
+- **Given** binary, **Then** mọi tool (search/deep/status) hoạt động như npx version
 
-**Given** code hiện auto-disable TLS verification khi fetch lỗi
-**When** review lại logic `_applyTlsFallback`
-**Then** TLS verification KHÔNG tự động tắt
-**And** chỉ tắt khi user explicit set env var (vd `FC_ALLOW_INSECURE_TLS=1`)
-**And** khi tắt, in cảnh báo rõ ràng ra stderr
-**And** README ghi rõ rủi ro của tùy chọn này
 
-### Story 3.3: Unified multi-backend interface
+---
 
-As a maintainer repositioning the project,
-I want a single backend abstraction,
-So that fast/deep modes share one code path and new providers are easy to add.
+## Epic 3: Token-Efficient Retrieval (v1.2)
+
+> Insight từ competitive analysis (Augment Context Engine): Augment nổi bật vì **assembled context** — agent không phải tự đọc thêm file sau search. deepgrep hiện chỉ trả file + ranges, buộc agent phải `read_file` lại → tốn token. Epic này đóng gap đó với approach token-efficient hơn Augment (agent chọn chủ động file nào cần đọc).
+
+### Story 3.1: Tool `deepgrep_get` — Two-stage code retrieval
+
+As a developer (or AI agent) using deepgrep,
+I want to fetch exact code snippets by file + line ranges without reading the whole file,
+so that I save tokens and get only the code I actually need.
 
 **Acceptance Criteria:**
+- **Given** một list `{file, ranges}` (output từ deepgrep_search), **When** gọi `deepgrep_get`, **Then** trả code đúng range, có line numbers, không đọc ngoài range
+- **Given** `FC_SNIPPET_MAX_LINES` set, **Then** tổng lines trả về không vượt budget đó
+- **Given** file binary, **Then** trả `[binary file — snippet omitted]` không crash
+- **Given** range out-of-bounds, **Then** bỏ qua gracefully, trả range hợp lệ còn lại
+- **Given** mảng `files` rỗng (hoặc `ranges` rỗng), **Then** trả message rõ ràng ("No files/ranges provided") KHÔNG crash
+- **Given** không cần API key, **Then** tool hoạt động pure local (không gọi API)
+- **Given** output, **Then** format rõ ràng: `file_path`, `line_start`, `line_end`, code block với line numbers
 
-**Given** 2 backend (Windsurf protobuf + OpenAI-compatible) hiện tách rời
-**When** tạo interface chung `Backend` (search method thống nhất)
-**Then** cả 2 backend implement cùng interface
-**And** việc thêm provider mới chỉ cần implement interface, không sửa server.mjs
-**And** README định vị lại là "multi-backend AI code search" (Windsurf là free fallback)
-**And** không regression: cả fast_context_search và deep_context_search vẫn hoạt động đúng
+**Ví dụ output mẫu (reference cho test assert):**
+```
+## src/auth.mjs (L10-14)
+10 | export function login(user, pass) {
+11 |   const hash = hashPassword(pass);
+12 |   const record = db.findUser(user);
+13 |   if (!record) return null;
+14 |   return record.hash === hash;
+```
+
+**Notes kỹ thuật:**
+- Tái dụng `src/snippets.mjs` → `readSnippets(files)` (đã implement sẵn)
+- Thêm tool vào `src/server.mjs` tương tự deepgrep_status (không cần API key)
+- **Input schema (ADR-6, Option A):** `files: z.array(z.object({ file: z.string(), ranges: z.array(z.tuple([z.number(), z.number()])) }))` — structured, self-documenting. Field `file` = absolute path (khớp `full_path` từ deepgrep_search).
+- Stateless: không liên kết session search→get. Agent tự truyền ranges từ output search.
+- Tool description nêu rõ 2-step workflow để LLM consumer biết khi nào gọi.
+- Xem `architecture.md` ADR-6.
+
+---
+
+### Story 3.2: Warm cache (optional, DEFER)
+
+As a user working repeatedly on the same repo,
+I want to pre-warm the search cache for common queries,
+so that my first real query returns instantly.
+
+**Acceptance Criteria:**
+- **Given** MCP tool `deepgrep_warm` được gọi với project_path, **Then** precompute repo map và cache metadata
+- **Given** sau warm, query search đầu tiên không phải rebuild repo map từ đầu
+
+**Notes (ADR-7):**
+- Expose dưới dạng **MCP tool `deepgrep_warm`**, KHÔNG phải CLI subcommand (deepgrep là stdio MCP server, không phải CLI app).
+- **DEFER** trừ khi đo được repo-map computation là bottleneck thật (hiện ~100ms cho medium repo). Ship Story 3.1 trước, đánh giá lại sau.
+- Xem `architecture.md` ADR-7.

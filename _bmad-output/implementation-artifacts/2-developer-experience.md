@@ -64,9 +64,9 @@ so that I can debug setup in seconds and users without Node can run deepgrep dir
 - [Source: deepgrep/src/extract-key.mjs#getDbPath] — Devin Desktop path detection
 - [Source: deepgrep/src/server.mjs] — tool registration pattern
 - [Source: deepgrep/package.json] — scripts
-- [Source: prd-deepgrep-v1.1.md#FR4, FR6]
-- [Source: architecture-deepgrep-v1.1.md#§4] — health.mjs module spec
-- [Source: architecture-deepgrep-v1.1.md#ADR-5] — binary defer nếu bundle fail
+- [Source: prd.md#FR4, FR6]
+- [Source: architecture.md#§4] — health.mjs module spec
+- [Source: architecture.md#ADR-5] — binary defer nếu bundle fail
 
 ## Dev Agent Record
 ### Completion Notes

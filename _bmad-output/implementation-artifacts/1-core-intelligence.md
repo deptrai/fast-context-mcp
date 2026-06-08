@@ -116,11 +116,11 @@ Env var rename (cache):
 - [Source: deepgrep/src/server.mjs] — handlers, env mutation 239-249 & 345-375
 - [Source: deepgrep/src/openai-backend.mjs] — searchOpenAI, _getOpenAI* getters
 - [Source: deepgrep/src/backends/openai.mjs] — backend wrapper
-- [Source: prd-deepgrep-v1.1.md#FR1,FR2,FR3,FR5]
-- [Source: architecture-deepgrep-v1.1.md#ADR-1] — local heuristic
-- [Source: architecture-deepgrep-v1.1.md#ADR-2] — cache cả 2 backend
-- [Source: architecture-deepgrep-v1.1.md#ADR-3] — escalation ưu tiên cache
-- [Source: architecture-deepgrep-v1.1.md#ADR-4] — error UX = presentation layer
+- [Source: prd.md#FR1,FR2,FR3,FR5]
+- [Source: architecture.md#ADR-1] — local heuristic
+- [Source: architecture.md#ADR-2] — cache cả 2 backend
+- [Source: architecture.md#ADR-3] — escalation ưu tiên cache
+- [Source: architecture.md#ADR-4] — error UX = presentation layer
 
 ## Dev Agent Record
 ### Completion Notes

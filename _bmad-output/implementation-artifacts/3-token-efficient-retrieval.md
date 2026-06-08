@@ -181,9 +181,9 @@ Các `[Review][Patch]` trong Story 2 (health.mjs: double-ping, key validation, e
 - `deepgrep/src/snippets.mjs` — `readSnippets` function (tái dụng toàn bộ)
 - `deepgrep/src/server.mjs` — tool registration pattern (`deepgrep_status`)
 - `deepgrep/test/health.test.mjs` — test pattern (`node:test` + `node:assert/strict`)
-- `_bmad-output/planning-artifacts/architecture-deepgrep-v1.1.md` § ADR-6 — schema Option A, stateless design
-- `_bmad-output/planning-artifacts/prd-deepgrep-v1.1.md` § FR7, NFR3/4/5
-- `_bmad-output/planning-artifacts/epics-deepgrep-v1.1.md` § Story 3.1
+- `_bmad-output/planning-artifacts/architecture.md` § ADR-6 — schema Option A, stateless design
+- `_bmad-output/planning-artifacts/prd.md` § FR7, NFR3/4/5
+- `_bmad-output/planning-artifacts/epics.md` § Story 3.1
 
 ## Dev Agent Record
 

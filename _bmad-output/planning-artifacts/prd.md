@@ -1,101 +1,105 @@
 ---
-title: "Fast Context MCP — Product Requirements Document"
-status: final
-created: 2026-06-06
-updated: 2026-06-06
+title: "deepgrep v1.1/v1.2 — PRD"
+status: living-document
+created: 2026-06-07
+updated: 2026-06-07
 owner: Luisphan
+inputDocuments:
+  - "deepgrep/ROADMAP-v1.1.md"
+  - "_bmad-output/planning-artifacts/research-deepgrep-v1.2.md"
 ---
 
-# Fast Context MCP — PRD
+# deepgrep v1.1 — Product Requirements Document
 
-## 1. Tổng quan & Tầm nhìn
+## 1. Bối cảnh
 
-**Fast Context MCP** là một MCP server (Node.js, ESM) cung cấp khả năng **tìm kiếm code theo ngữ nghĩa bằng AI** cho mọi client tương thích MCP (Kiro, Claude Code, Claude Desktop, Cursor). Thay vì index trước, server cho một AI model "đọc" cấu trúc dự án rồi tự ra lệnh `rg`/`readfile`/`tree` thực thi cục bộ qua nhiều vòng, trả về **đường dẫn file + line ranges + grep keywords**.
+deepgrep v1.0 đã ship: MCP server semantic code search với 2 mode (fast SWE-1.6/Windsurf, deep combo qua 9router). Benchmark chứng minh **giá trị cốt lõi = deep multi-hop reasoning**.
 
-**Tầm nhìn:** Trở thành công cụ semantic code search **đa backend, không cần index, không phụ thuộc một nhà cung cấp model duy nhất** — kết hợp được cả model miễn phí (tốc độ cao) lẫn model chất lượng cao (độ chính xác cao) qua một interface thống nhất.
+**v1.1** (done): Khuếch đại core value, giảm friction hằng ngày, tăng độ tin cậy — auto-escalation, cache, error UX, deepgrep_status, binary build.
 
-**Vấn đề giải quyết:**
-- Các công cụ code search dựa trên embedding/graph cần build index trước, dễ stale, và không "hiểu" intent phức tạp.
-- Grep thuần không hiểu ngữ nghĩa.
-- Fast Context cho AI suy luận như một developer thật: nhìn cây thư mục → đoán → grep → đọc → lặp.
+**v1.2** (planning): Token-efficient retrieval — đóng gap với Augment Context Engine theo cách nhẹ hơn, zero-index, không cần enterprise setup. Insight: Augment nổi bật vì assembled context, deepgrep v1.2 thêm `deepgrep_get` để agent không phải `read_file` toàn bộ.
 
-## 2. Người dùng mục tiêu
+**Positioning:** deepgrep = zero-setup semantic code search, no index, BYOM, token-efficient. Cho individual dev và team nhỏ — không cạnh tranh trực tiếp Augment enterprise ($60+/dev/tháng).
 
-- **Developers** dùng AI IDE muốn hỏi codebase bằng ngôn ngữ tự nhiên ("logic xác thực nằm đâu?"). `[ASSUMPTION]`
-- **AI agents** (như Kiro) cần lấy context chính xác trước khi sửa code, dùng tool này như một bước gather-context. `[ASSUMPTION]`
+## 2. Mục tiêu v1.1
 
-## 3. Bối cảnh & Ràng buộc hiện tại
+- G1. User không phải tự chọn quick vs deep (auto-routing).
+- G2. Query lặp không tốn token (cache hoạt động đúng).
+- G3. Lỗi rõ ràng, actionable (429/403/no-key).
+- G4. Setup self-verifiable (health check).
 
-- **Runtime:** Node.js >= 18, ESM. Zero system-level dependency (ripgrep qua `@vscode/ripgrep`, tree qua `tree-node-cli`, SQLite qua `sql.js`).
-- **Backend 1 (free):** Protocol reverse-engineered của Windsurf/Devin (`server.self-serve.windsurf.com`, Connect-RPC + Protobuf), model SWE-1.6. **Rủi ro:** protocol không công khai, hardcode version (`WS_APP_VER`), có thể hỏng khi nhà cung cấp đổi API.
-- **Backend 2 (paid):** OpenAI-compatible API (9router/bất kỳ), dùng cho `deep_context_search` với combo `deep-search` (Sonnet 4.6 → GPT-5.5 fallback).
-- **Auth:** Tự trích API key từ Devin Desktop / Windsurf local SQLite; hỗ trợ prefix `devin-session-*` và `sk-*`.
-- **License:** MIT, open source. `[ASSUMPTION]` không monetize.
+## 3. Non-goals
 
-## 4. Mục tiêu (Goals) & Phi mục tiêu (Non-goals)
+- v1.1: Port Rust; embedding index; multi-repo/GitHub; thêm model provider mới; streaming progress.
+- v1.2: Index-based search; symbol-aware AST parsing (phá moat zero-index); cross-repo (hoãn v1.3).
 
-**Goals:**
-- G1. Cung cấp semantic code search chính xác, không cần index, cross-platform (macOS/Windows/Linux).
-- G2. Hỗ trợ đa backend/đa model qua interface thống nhất, cho phép đánh đổi tốc độ ↔ chất lượng.
-- G3. Bền vững trước thay đổi của một nhà cung cấp model đơn lẻ.
-- G4. Dễ cấu hình trong MCP client, tự discover credentials.
+## 4. Functional Requirements
 
-**Non-goals:**
-- NG1. Không xây GUI riêng.
-- NG2. Không thay thế các tool call-graph/blast-radius (như code-review-graph) — bổ trợ, không cạnh tranh.
-- NG3. Không tự host/train model.
+> ✅ v1.1 (done) · 🔲 v1.2 (backlog)
 
-## 5. Yêu cầu chức năng (Functional Requirements)
+### ✅ FR1 — Auto-escalation quick → deep
+- WHEN query có dấu hiệu multi-hop (≥3 mệnh đề / keywords "trace/flow/across/from...to") OR quick trả 0 results, THE system SHALL tự dùng deep mode (retry 1 lần).
+- THE system SHALL có param `auto_escalate` (default true) để tắt.
+- THE output SHALL ghi rõ mode thực tế đã dùng (vd "[escalated to deep]").
 
-### FR-Group A: Core Search
-- **FR1.** Tool `fast_context_search`: nhận query ngôn ngữ tự nhiên + project_path, trả về danh sách file + line ranges + grep keywords.
-- **FR2.** Tham số điều chỉnh: `tree_depth` (1-6), `max_turns` (1-5), `max_results` (1-30), `exclude_paths`.
-- **FR3.** Adaptive tree-depth fallback: tự hạ độ sâu khi cây thư mục vượt 250KB.
-- **FR4.** Thực thi lệnh cục bộ song song (rg/readfile/tree/ls/glob), truncate output (50 dòng / 250 ký tự).
-- **FR5.** Path-traversal protection khi parse answer XML (chặn `../`, đường dẫn ngoài root).
+### ✅ FR2 — Cache verify & hoàn thiện
+- WHEN query + project_path + model giống hệt và codebase chưa đổi, THE system SHALL trả kết quả từ cache không gọi API.
+- WHEN file trong project thay đổi (mtime), THE system SHALL invalidate cache liên quan.
+- THE output metadata SHALL chứa `cache_hit: true|false`.
+- THE system SHALL hỗ trợ `DEEPGREP_CACHE_DISABLED` và `DEEPGREP_CACHE_TTL_MS`.
 
-### FR-Group B: Deep Search (multi-backend)
-- **FR6.** Tool `deep_context_search`: dùng OpenAI-compatible backend với model cấu hình được (mặc định combo `deep-search`).
-- **FR7.** Response validation: phát hiện response malformed (thiếu `finish_reason`, `tool_calls` args lỗi) và tự retry 1 lần.
-- **FR8.** Hỗ trợ forced `tool_choice` để ép model trả answer ở turn cuối.
+### ✅ FR3 — Better error UX
+- WHEN nhận HTTP 429, THE system SHALL trả message: model bị rate limit + gợi ý đổi model/đợi.
+- WHEN nhận HTTP 403, THE system SHALL gợi ý dùng combo `deep-search` hoặc model khác.
+- WHEN deep model fail, THE system SHALL suggest fallback model cụ thể.
 
-### FR-Group C: Credentials & Config
-- **FR9.** Tool `extract_windsurf_key`: trích API key từ Devin Desktop / Windsurf local DB, đa nền tảng.
-- **FR10.** Auto-discover key nếu env var không set; hỗ trợ nhiều prefix key.
-- **FR11.** Cấu hình qua env vars (model, turns, commands, timeout, OpenAI backend URL/key/model).
+### ✅ FR4 — Health-check tool `deepgrep_status`
+- THE system SHALL cung cấp tool `deepgrep_status` trả về: key hợp lệ?, models available, Devin Desktop có cài?, config hiện tại (URL/model/fast backend).
 
-### FR-Group D: Roadmap (cải tiến đề xuất)
-- **FR12.** `[ASSUMPTION]` Đồng bộ tài liệu: README khớp code thật (sql.js không phải better-sqlite3, model mặc định, tool deep_context_search, Devin Desktop).
-- **FR13.** `[ASSUMPTION]` Tách shared code (`SYSTEM_PROMPT_TEMPLATE`, `getRepoMap`, `_parseAnswer`) ra module chung giữa 2 backend.
-- **FR14.** `[ASSUMPTION]` Caching kết quả theo hash(query + tree state) để tiết kiệm API call (đặc biệt deep mode).
-- **FR15.** `[ASSUMPTION]` Option trả kèm code snippet (không chỉ line ranges) để giảm round-trip cho caller.
-- **FR16.** `[ASSUMPTION]` Test suite: unit test cho protobuf encode/decode, answer XML parsing + path guard, key extraction fallback.
-- **FR17.** `[ASSUMPTION]` Đồng bộ version giữa server.mjs và package.json; bump phù hợp.
+### ✅ FR5 — Query refinement (quick mode)
+- WHEN query không phải tiếng Anh hoặc quá mơ hồ, THE system SHALL gợi ý rephrase bằng code terms tiếng Anh, HOẶC tự nâng lên deep (liên kết FR1).
 
-## 6. Yêu cầu phi chức năng (NFRs)
+### ✅ FR6 — Single binary build
+- THE build SHALL hỗ trợ tạo standalone binary (`bun build --compile`) cho macOS/Linux/Windows.
 
-- **NFR1. Hiệu năng:** fast mode trả kết quả < 5s điển hình; deep mode < 90s. Chạy lệnh song song.
-- **NFR2. Bảo mật:** Không log giá trị API key; path-traversal guard; TLS fallback chỉ khi cần và có cảnh báo rõ ràng. `[NOTE FOR PM]` Cân nhắc bỏ auto-disable TLS verification (rủi ro MITM).
-- **NFR3. Tương thích:** macOS/Windows/Linux; Node >= 18; không cần cài dependency hệ thống.
-- **NFR4. Khả năng phục hồi:** Phân loại lỗi (TIMEOUT/PAYLOAD/RATE_LIMITED/AUTH); auto-retry + context trimming; combo fallback giữa models.
-- **NFR5. Khả năng bảo trì:** Không trùng code giữa backend; có test; comment nhất quán một ngôn ngữ (English).
-- **NFR6. Quan sát được:** Trả metadata chẩn đoán (`[config]`, `[diagnostic]`) để caller AI tự điều chỉnh tham số.
+### 🔲 FR7 — Token-efficient two-stage retrieval (`deepgrep_get`)
+- THE system SHALL cung cấp tool `deepgrep_get` nhận `{file, ranges}[]` và trả code snippets với line numbers.
+- THE tool SHALL KHÔNG gọi API (pure local file read).
+- THE tool SHALL tôn trọng `FC_SNIPPET_MAX_LINES` / `FC_LINE_MAX_CHARS`.
+- THE tool SHALL handle binary files gracefully.
+- THE tool SHALL bỏ qua out-of-bounds ranges mà không crash.
+- **Rationale:** Augment Context Engine assembled context là killer feature. deepgrep_get là phiên bản token-efficient: agent chọn chủ động file nào cần, không phải đọc toàn bộ. Tái dụng `snippets.mjs` đã có.
 
-## 7. Success Metrics & Counter-metrics
+### 🔲 FR8 — Warm cache (optional)
+- THE system SHALL cung cấp lệnh/tool để precompute repo map và warm cache trước khi query.
+- **Priority:** P1 optional, ship kèm FR7 nếu còn budget.
 
-- **M1.** Tỉ lệ query trả kết quả đúng (accuracy) — đo qua benchmark định kỳ. `[ASSUMPTION]`
-- **M2.** Adoption: npm installs, GitHub stars. `[ASSUMPTION]`
-- **Counter-metric C1.** Tỉ lệ lỗi/fail (0 results, ERR) không tăng khi thêm tính năng.
-- **Counter-metric C2.** Latency p50/p95 không xấu đi sau khi thêm caching/validation.
+## 5. NFRs
 
-## 8. Rủi ro & Giả định
+- NFR1. Cache hit trả < 100ms.
+- NFR2. Auto-escalation không tăng latency cho query đơn giản (heuristic local, ~0ms).
+- NFR3. Không thêm dependency nặng (giữ zero system-level dep).
+- NFR4. Backward compatible — config v1.0 vẫn chạy.
+- NFR5. `deepgrep_get` không gọi API, latency < 50ms cho file thông thường.
 
-- **R1 (cao).** Phụ thuộc protocol Windsurf không công khai → có thể hỏng bất cứ lúc nào. *Giảm thiểu:* multi-backend, giữ OpenAI-compatible làm đường chính, Windsurf là free fallback.
-- **R2 (trung bình).** Proxy bên thứ ba (9router) có bug multi-turn tool calling → đã có response validation + combo fallback.
-- **R3 (thấp).** ToS của Windsurf/Devin về reverse-engineering. `[NOTE FOR PM]`
+## 6. Success Metrics
 
-## 9. Open Questions
+- M1. Tỉ lệ query trả kết quả đúng tăng (nhờ auto-escalation cho multi-hop). ✅ v1.1
+- M2. Token cost giảm (nhờ cache hit cho query lặp). ✅ v1.1
+- M3. Token cost per task giảm khi dùng deepgrep_get thay read_file. 🔲 v1.2
+- Counter: latency query đơn giản không tăng.
 
-- OQ1. Có nên định vị lại dự án thành "multi-backend AI code search" (giảm nhấn mạnh Windsurf)? `[ASSUMPTION] có`
-- OQ2. Có monetize không, hay giữ thuần MIT? `[ASSUMPTION] thuần MIT`
-- OQ3. Mức độ ưu tiên giữa nhóm "dọn nợ kỹ thuật" (FR12-13,17) và "tính năng mới" (FR14-15)?
+## 7. Rủi ro
+
+- R1. Heuristic auto-escalation sai (escalate query đơn giản → tốn token). Mitigant: param tắt + conservative threshold. ✅ mitigated
+- R2. Cache invalidation miss → trả stale. Mitigant: mtime hash + TTL. ✅ mitigated
+- R3. deepgrep_get ranges sai (từ AI hallucinate) → trả code không đúng. Mitigant: luôn hiển thị line numbers, user/agent verify được.
+
+## 8. Competitive Positioning (v1.2 context)
+
+**Augment Context Engine** là điểm tham chiếu chính cho Epic 3. Key insights:
+- Augment mạnh ở scale (400k+ files), temporal context (commit history), cross-repo — enterprise $60+/dev/tháng
+- deepgrep KHÔNG cạnh tranh trực tiếp. deepgrep = zero-setup, zero-index, BYOM cho individual dev/team nhỏ
+- Gap cần đóng: deepgrep thiếu assembled context (agent phải read_file thêm sau search)
+- `deepgrep_get` (FR7) đóng gap này theo cách token-efficient: agent chủ động chọn đoạn cần đọc
+- Xem đầy đủ: `_bmad-output/planning-artifacts/research-deepgrep-v1.2.md`

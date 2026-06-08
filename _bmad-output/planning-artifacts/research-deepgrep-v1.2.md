@@ -181,6 +181,6 @@ deepgrep tách ra → agent chọn file nào cần đọc thêm → tiết kiệ
 
 ### Next steps
 
-1. Update **epics-deepgrep-v1.1.md** thêm Epic 3 (v1.2 features) — không tạo file mới
-2. Update **prd-deepgrep-v1.1.md** thêm FR7/FR8 — không tạo file mới
+1. Update **epics.md** thêm Epic 3 (v1.2 features) — không tạo file mới
+2. Update **prd.md** thêm FR7/FR8 — không tạo file mới
 3. Khi sẵn sàng dev: tạo Story 3.1 (deepgrep_get) trong implementation-artifacts

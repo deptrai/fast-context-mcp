@@ -1,183 +1,155 @@
 ---
-title: "Fast Context MCP — Architecture"
+title: "deepgrep v1.1 — Architecture"
 status: draft
-created: 2026-06-06
-updated: 2026-06-06
+created: 2026-06-07
+updated: 2026-06-07
 author: Winston (System Architect)
 inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "_bmad-output/planning-artifacts/epics.md"
 ---
 
-# Fast Context MCP — Architecture
+# deepgrep v1.1 — Architecture
 
-> Triết lý: boring technology, developer productivity, trade-offs thay vì verdicts.
-> Tài liệu này mô tả kiến trúc **hiện tại** (as-built) và **mục tiêu** (target, sau khi roadmap FR12–FR17 hoàn thành), nêu rõ ranh giới giữa hai trạng thái.
+> Triết lý: boring tech, dev productivity, không scope creep. v1.1 mở rộng v1.0 bằng cách thêm 1 lớp routing + cache, KHÔNG đổi kiến trúc nền.
 
-## 1. Tổng quan kiến trúc
+## 1. As-built (v1.0)
 
-Fast Context MCP là một **MCP stdio server** (Node.js ESM, không state, sống theo session) cho AI-driven semantic code search. Kiến trúc cốt lõi là một **agentic search loop**: server gửi query + repo map cho một LLM, LLM ra lệnh search, server thực thi cục bộ, lặp N vòng, trả về file + line ranges.
+deepgrep là MCP stdio server (Node ESM, ~3300 LOC) với 2 backend chia sẻ chung shared layer.
 
 ```
-┌─────────────┐   stdio/MCP    ┌──────────────────────────────────────┐
-│ MCP Client  │ ◄────────────► │           server.mjs (MCP)           │
-│ (Kiro, etc) │   JSON-RPC     │  tools: fast_context_search,         │
-└─────────────┘                │         deep_context_search,         │
-                               │         extract_windsurf_key         │
-                               └───────────────┬──────────────────────┘
-                                               │ dispatch by mode
-                          ┌────────────────────┴────────────────────┐
-                          ▼                                          ▼
-              ┌───────────────────────┐                ┌────────────────────────┐
-              │  Windsurf backend     │                │  OpenAI-compat backend  │
-              │  (core.mjs)           │                │  (openai-backend.mjs)   │
-              │  Connect-RPC/Protobuf │                │  Chat Completions       │
-              │  model: SWE-1.6       │                │  model: combo/9router   │
-              └───────────┬───────────┘                └────────────┬───────────┘
-                          │  agentic loop (N turns)                  │
-                          └────────────────────┬─────────────────────┘
-                                               ▼
-                               ┌──────────────────────────────┐
-                               │  ToolExecutor (executor.mjs)  │
-                               │  rg / readfile / tree /        │
-                               │  ls / glob — LOCAL, parallel   │
-                               └──────────────────────────────┘
+server.mjs (MCP entry, 2 tools)
+   ├── deepgrep_search → backends/windsurf.mjs (SWE-1.6, protobuf) ──┐
+   └── deepgrep_deep   → backends/openai.mjs (9router combo) ────────┤
+                                                                      ▼
+                          shared.mjs (prompts, getRepoMap, _parseAnswer)
+                          executor.mjs (rg/readfile/tree, local)
+                          cache.mjs (in-memory, scaffold)
+                          snippets.mjs (code content reader)
+                          protobuf.mjs (Windsurf wire format)
+                          extract-key.mjs (Devin/Windsurf key)
 ```
 
-## 2. Technology Stack
+| Module | Vai trò |
+|--------|---------|
+| `server.mjs` | MCP entry, đăng ký tools, dispatch, format output |
+| `backends/index.mjs` | Registry: `getBackend(name)` |
+| `backends/windsurf.mjs` | Wrap core.mjs (protobuf SWE-1.6) |
+| `backends/openai.mjs` | Wrap openai-backend.mjs (OpenAI-compatible) |
+| `core.mjs` | Windsurf protocol + search loop |
+| `openai-backend.mjs` | OpenAI chat completions loop + 429 retry |
+| `shared.mjs` | prompts, getRepoMap, _parseAnswer (dùng chung) |
+| `executor.mjs` | ToolExecutor: rg/readfile/tree local |
+| `cache.mjs` | computeMtimeHash, buildCacheKey, get/setCachedResult, clearCache |
+| `snippets.mjs` | readSnippets (FR include_snippets) |
+| `protobuf.mjs` | Protobuf encoder/decoder |
+| `extract-key.mjs` | Trích key Devin/Windsurf |
 
-| Layer | Choice | Version | Rationale |
-|-------|--------|---------|-----------|
-| Runtime | Node.js | >= 18 (ESM) | `node:test`, native fetch, AbortSignal.timeout sẵn có |
-| MCP framework | `@modelcontextprotocol/sdk` | ^1.0.0 | Chuẩn MCP chính thức |
-| Search binary | `@vscode/ripgrep` | ^1.15.9 | rg bundled, cross-platform, no system install |
-| Directory tree | `tree-node-cli` | ^1.6.0 | Thay `tree` hệ thống, cross-platform |
-| Local DB read | `sql.js` | ^1.14.0 | WASM, đọc `state.vscdb` không cần native compile |
-| Schema validation | `zod` | ^3.25.0 | Yêu cầu của MCP SDK cho tool params |
-| Wire protocol (Windsurf) | hand-written Protobuf + Connect-RPC | — | `protobuf.mjs`, không dùng lib nặng |
+## 2. v1.1 thay đổi gì (delta)
 
-**Nguyên tắc:** zero system-level dependency. Mọi binary (rg, tree, sqlite) bundled qua npm → cài xong chạy ngay trên macOS/Windows/Linux.
+v1.1 thêm **1 module mới** (`escalate.mjs`, `health.mjs`) + **hoàn thiện cache** + **cải thiện error layer**. KHÔNG đổi backend abstraction.
 
-## 3. Source Structure (as-built)
+```
+server.mjs
+   ├── deepgrep_search ──► escalate.mjs (NEW) ──► quick OR deep
+   │                         shouldEscalate(query) heuristic
+   ├── deepgrep_deep   ──► openai backend
+   └── deepgrep_status ──► health.mjs (NEW)
 
-| Module | LOC | Trách nhiệm | Exports |
-|--------|-----|-------------|---------|
-| `server.mjs` | 351 | MCP entry, đăng ký 3 tools, route fast/deep, format output | — (entry) |
-| `core.mjs` | 1227 | Windsurf backend: auth/JWT, protobuf request, streaming, agentic loop, repo map, answer parse | `search`, `searchWithContent`, `extractKeyInfo` |
-| `openai-backend.mjs` | 423 | OpenAI-compatible backend: chat completions loop, tool calling, response validation | `searchOpenAI`, `isOpenAIBackendConfigured` |
-| `executor.mjs` | 591 | ToolExecutor: rg/readfile/tree/ls/glob cục bộ, truncate, remap path | `ToolExecutor` |
-| `extract-key.mjs` | 110 | Trích API key từ Devin/Windsurf SQLite, đa nền tảng | `getDbPath`, `extractKey` |
-| `protobuf.mjs` | 235 | Protobuf encoder/decoder + Connect-RPC frames | `ProtobufEncoder`, `decodeVarint`, `extractStrings`, `connectFrameEncode`, `connectFrameDecode` |
+cache.mjs (verify + wire vào CẢ 2 backend)
+openai-backend.mjs (friendlyError layer)
+```
 
-### Target structure (sau roadmap)
+## 3. Decisions cho v1.1
+
+### ADR-1: Auto-escalation là LOCAL heuristic, không gọi AI
+- `escalate.mjs#shouldEscalate(query)` chạy local (~0ms): đếm mệnh đề, match multi-hop keywords, detect non-ASCII.
+- **Trade-off:** Heuristic đơn giản có thể false-negative (query phức tạp viết ngắn gọn). Chấp nhận — conservative để tránh tốn token oan (NFR2). User vẫn gọi `deepgrep_deep` trực tiếp được.
+- **Vì sao không dùng AI để quyết định:** thêm 1 round-trip API chỉ để route = phản tác dụng (chậm + tốn token).
+
+### ADR-2: Cache là in-memory per-process, áp dụng CẢ 2 backend
+- v1.0 cache scaffold chỉ wire vào openai backend. v1.1 wire vào cả windsurf path (core.mjs).
+- Key = hash(query + model + maxTurns + maxResults + treeDepth + repoMap + mtimeHash).
+- **Trade-off:** không persistent → cache mất khi restart MCP. Chấp nhận: MCP stdio sống suốt session, đủ cho query lặp trong 1 phiên làm việc. Persistent = over-engineering.
+- Invalidation: mtimeHash của top-level files. **Giới hạn đã biết:** đổi file sâu mà mtime thư mục không đổi có thể miss — chấp nhận cho v1.1, TTL là safety net.
+
+### ADR-3: Escalation flow ưu tiên cache
+- Thứ tự: `shouldEscalate` → chọn mode → `getRepoMap` → `buildCacheKey` → check cache → (hit return / miss → call → setCache).
+- Escalated deep call cũng đi qua cache → query phức tạp lặp lại vẫn được cache.
+
+### ADR-4: Error UX là presentation layer, không đổi retry logic
+- Retry 429 (exponential backoff + reset-after hint) đã có ở `_callOpenAI` — GIỮ NGUYÊN.
+- v1.1 chỉ thêm `_friendlyError(err, model)` ở tầng format → dịch error code thành message actionable. Tách biệt concern: retry (network) vs message (UX).
+
+### ADR-5: Single binary KHÔNG đổi source, chỉ thêm build target
+- `bun build --compile` — source giữ nguyên ESM.
+- **Rủi ro:** `@vscode/ripgrep` (binary) + `sql.js` (WASM) có thể không bundle. Nếu fail → defer sang v1.2, giữ npx primary. KHÔNG block các story khác.
+
+### ADR-6 (v1.2): `deepgrep_get` là stateless local-read tool, tách biệt search pipeline
+- Tool nhận `{file, ranges}[]` → đọc file local → format snippets → trả về. KHÔNG gọi API, KHÔNG ghi cache, KHÔNG giữ session search→get.
+- **Thiết kế theo MCP best practices:**
+  - **Structured schema (Option A):** `files: z.array(z.object({ file: z.string(), ranges: z.array(z.tuple([z.number(), z.number()])) }))`. Self-documenting, type-safe. Field `file` = absolute path, khớp `full_path` mà `deepgrep_search` trả về.
+  - **Stateless:** MCP tool call stateless by design. Không liên kết session với search trước → giảm complexity & bug surface. Agent tự truyền ranges (copy từ output search).
+  - **Graceful degradation:** file không tồn tại/binary/range out-of-bounds → annotation rõ ràng, KHÔNG throw. `readSnippets` đã handle sẵn.
+  - **Token-aware:** tôn trọng `FC_SNIPPET_MAX_LINES` / `FC_LINE_MAX_CHARS`, đánh dấu khi truncate.
+  - **Tool description nêu rõ 2-step workflow:** "Use after deepgrep_search to fetch exact code without reading whole files" — để LLM consumer biết khi nào gọi.
+  - **Consistent:** đăng ký theo pattern `deepgrep_status` (server.tool + async handler), không thêm dependency.
+- **Trade-off:** Không có session liên kết search→get → agent phải tự truyền ranges. Chấp nhận: đổi lấy zero-state, zero-coupling. Đúng triết lý boring tech.
+
+### ADR-7 (v1.2): Warm cache là MCP tool, KHÔNG phải CLI subcommand
+- deepgrep là stdio MCP server, không phải CLI app. Thêm CLI arg-parsing vào entry point = over-engineering + 2 code path.
+- Nếu làm FR8: expose `deepgrep_warm` tool (pattern giống status) thay vì `deepgrep warm` command.
+- **Khuyến nghị:** DEFER FR8 trừ khi đo được repo-map computation là bottleneck thật (hiện ~100ms cho medium repo — chưa phải vấn đề). Ship Story 3.1 trước, đánh giá lại sau.
+
+## 4. Module mới (target)
 
 ```
 src/
-├── server.mjs              # MCP entry — chỉ dispatch + format (mỏng đi)
-├── shared.mjs              # [Story 1.2] prompt templates, getRepoMap, parseAnswer
-├── cache.mjs               # [Story 2.1] result cache (in-memory + TTL)
-├── backends/
-│   ├── index.mjs           # [Story 3.3] registry/factory
-│   ├── windsurf.mjs        # wrap core protobuf backend
-│   └── openai.mjs          # wrap OpenAI-compatible backend
-├── executor.mjs            # giữ nguyên
-├── extract-key.mjs         # giữ nguyên
-└── protobuf.mjs            # giữ nguyên
-test/                       # [Story 3.1] node:test
+├── escalate.mjs   [NEW] shouldEscalate(query) → {escalate: bool, reason, refineHint}
+├── health.mjs     [NEW] checkHealth() → {keyValid, models, devinDetected, config}
+├── cache.mjs      [COMPLETE] wire vào core.mjs + openai-backend.mjs
+└── (rest unchanged)
 ```
 
-## 4. Kiến trúc cốt lõi: Agentic Search Loop
-
-Cả 2 backend chia sẻ cùng mô hình:
-
-1. `getRepoMap(projectRoot, treeDepth, excludePaths)` → cây thư mục ánh xạ thành `/codebase` ảo, adaptive fallback khi > 250KB (`MAX_TREE_BYTES`).
-2. Gửi `system prompt + (query + repo map)` lên model.
-3. Model trả `tool_call`:
-   - `restricted_exec` (rg/readfile/tree/ls/glob, ≤ `maxCommands` song song) → `ToolExecutor.execToolCallAsync`
-   - `answer` (XML) → kết thúc
-4. Kết quả thực thi đẩy lại model, lặp tới `maxTurns`.
-5. Turn cuối ép trả answer (Windsurf: inject FINAL_FORCE_ANSWER; OpenAI: `tool_choice: {function: answer}`).
-6. `_parseAnswer` → `{files:[{path, full_path, ranges}], rg_patterns, _meta}` với **path-traversal guard**.
-
-**Khác biệt 2 backend (có chủ đích, phải giữ):**
-- Windsurf dùng format text `[TOOL_CALLS]name[ARGS]{json}` parse thủ công; OpenAI dùng `tool_calls` chuẩn.
-- System prompt khác nhau (Windsurf chi tiết hơn). → Story 1.2 phải tham số hoá, KHÔNG ép chung.
-
-## 5. Backend Abstraction (target — Story 3.3)
-
-Interface thống nhất, factory chọn backend theo config:
+## 5. Data flow v1.1 (deepgrep_search với auto-escalation)
 
 ```
-interface Backend {
-  async search({ query, projectRoot, maxTurns, maxCommands,
-                 maxResults, treeDepth, timeoutMs, excludePaths,
-                 onProgress }) : Promise<{
-    files: Array<{path, full_path, ranges}>,
-    rg_patterns: string[],
-    _meta: { backend, model, treeDepth, treeSizeKB, fellBack, ... },
-    error?: string
-  }>
-}
+query → shouldEscalate(query)?
+  ├─ YES (multi-hop) → deep backend ──┐
+  └─ NO → quick backend                │
+            └─ 0 results + auto_escalate? → deep backend ─┤
+                                                           ▼
+                              getRepoMap → buildCacheKey → cache?
+                                ├─ hit → return (cache_hit: true)
+                                └─ miss → search loop → setCache → return
 ```
 
-- `WindsurfBackend` (free, SWE-1.6) — tự discover apiKey/jwt; là **free fallback**.
-- `OpenAIBackend` (paid, combo `deep-search` qua 9router) — Sonnet 4.6 → GPT-5.5 fallback ở tầng proxy.
-- Thêm provider mới = implement interface + đăng ký registry, **không sửa server.mjs**.
+## 6. NFR compliance
 
-Đây là hiện thực hoá repositioning "multi-backend AI code search" (PRD OQ1=yes).
+| NFR | Cách đạt |
+|-----|----------|
+| NFR1 (cache <100ms) | In-memory Map lookup |
+| NFR2 (no latency cho query đơn giản) | shouldEscalate local heuristic ~0ms |
+| NFR3 (no heavy deps) | escalate/health thuần JS, không thêm package |
+| NFR4 (backward compat) | env v1.0 vẫn chạy; auto_escalate default true nhưng non-breaking |
 
-## 6. Resilience & Error Handling
+## 7. Story → Module map
 
-- `FastContextError` phân loại: `TIMEOUT | PAYLOAD_TOO_LARGE | RATE_LIMITED | AUTH_ERROR | SERVER_ERROR | NETWORK_ERROR`.
-- Auto-retry: streaming request retry tối đa 2 lần (trừ 4xx ≠ 429); context trimming khi payload/timeout.
-- OpenAI backend: response validation (`_isValidResponse`) + retry 1 lần khi malformed (đối phó bug proxy multi-turn — xem `9ROUTER_BUG_REPORT.md`).
-- Turn compensation: vòng không có lệnh hợp lệ không tính (tối đa 2 lần, chống vòng lặp vô hạn).
-- Combo `deep-search` fallback ở tầng 9router (Sonnet → GPT-5.5).
+| Story | Module touched |
+|-------|----------------|
+| 1.1 Verify cache | cache.mjs, core.mjs, openai-backend.mjs, server.mjs |
+| 1.2 Auto-escalation | escalate.mjs (new), server.mjs |
+| 1.3 Better error UX | openai-backend.mjs / shared.mjs, server.mjs |
+| 2.1 Status tool | health.mjs (new), server.mjs |
+| 2.2 Single binary | package.json, .github/workflows |
+| 3.1 deepgrep_get (v1.2) | server.mjs (tool mới), snippets.mjs (tái dụng, no change) |
+| 3.2 Warm cache (v1.2, defer) | server.mjs (tool mới), cache.mjs, shared.mjs (getRepoMap) |
 
-## 7. Security Architecture
+## 8. Risks
 
-| Concern | Hiện tại | Target (Story 3.2) |
-|---------|----------|--------------------|
-| API key | Trích từ local SQLite; không log giá trị | Giữ nguyên; reference theo tên |
-| Path traversal | `_parseAnswer` reject `../` + path ngoài root | Giữ; bổ sung test (Story 3.1) |
-| TLS | **Auto-disable verification khi fetch lỗi** ⚠️ MITM risk | Opt-in `FC_ALLOW_INSECURE_TLS=1` + cảnh báo stderr |
-| Command injection | `execFile` với args array (không shell string) | Giữ — đã an toàn |
-| Untrusted output | Output rg/file truncate, không eval | Giữ |
-
-**Quyết định kiến trúc (ADR):** TLS auto-fallback là nợ bảo mật phải trả — mặc định verification BẬT, chỉ tắt khi user chủ động opt-in.
-
-## 8. Performance & Caching (target — Story 2.1)
-
-- Fast mode (SWE-1.6): p50 ~2-5s. Deep mode (combo): ~20-90s.
-- Lệnh thực thi song song (`Promise.all` trong `execToolCallAsync`), output truncate (50 dòng / 250 ký tự).
-- **Cache (target):** in-memory Map per-process, key = hash(query + model + params + tree snapshot + mtime aggregate), TTL cấu hình (`FC_CACHE_TTL_MS`), bypass `FC_CACHE_DISABLED`. Phù hợp MCP stdio process sống lâu — KHÔNG persistent (tránh over-engineering).
-
-## 9. Testing Strategy (target — Story 3.1)
-
-- Framework: `node:test` built-in (no new dep).
-- Unit-testable pure logic: `protobuf.mjs` (round-trip), `_parseAnswer` (+ path guard), `extract-key` (fallback priority).
-- Network layer (fetch) = ngoài scope unit; cân nhắc integration test riêng sau.
-- `npm test` = `node --test`.
-
-## 10. Configuration & Deployment
-
-- Phân phối: npm package `@sammysnake/fast-context-mcp`, chạy qua `npx` trong MCP client config.
-- Cấu hình thuần env vars: `WS_MODEL`, `FC_MAX_TURNS`, `FC_MAX_COMMANDS`, `FC_TIMEOUT_MS`, `FC_RESULT_MAX_LINES`, `FC_LINE_MAX_CHARS`, `FC_DEEP_BASE_URL/API_KEY/MODEL` (+ target: `FC_CACHE_*`, `FC_ALLOW_INSECURE_TLS`).
-- Không build step (ESM thuần). Node >= 18.
-
-## 11. Key Risks & Trade-offs
-
-| Rủi ro | Mức | Trade-off / Giảm thiểu |
-|--------|-----|------------------------|
-| Phụ thuộc protocol Windsurf không công khai (hardcode `WS_APP_VER`) | Cao | Multi-backend: OpenAI-compat là đường chính bền vững, Windsurf là free fallback |
-| Proxy bên thứ ba (9router) bug multi-turn | TB | Response validation + retry + combo fallback |
-| Varint encoder 32-bit (field/length > 2³¹ sai) | Thấp | Thực tế không chạm; ghi nhận giới hạn |
-| Không deterministic (model-dependent) | TB | Chấp nhận; combo + retry giảm variance |
-
-## 12. Architecture Decision Records (tóm tắt)
-
-- **ADR-1:** Agentic search loop thay vì pre-built index → luôn fresh, không stale, không setup. Đánh đổi: chậm hơn (network + inference) so với vector lookup.
-- **ADR-2:** Hand-written protobuf thay vì lib → nhẹ, kiểm soát wire format Windsurf. Đánh đổi: tự maintain.
-- **ADR-3:** Multi-backend với interface chung → bền vững trước thay đổi 1 provider. Đánh đổi: thêm 1 lớp abstraction.
-- **ADR-4:** In-memory cache per-process (không persistent) → đơn giản, đủ cho stdio session. Đánh đổi: không share cache giữa session.
-- **ADR-5:** TLS verification mặc định BẬT (opt-in mới tắt) → an toàn mặc định. Đánh đổi: user sau proxy self-signed phải set env var.
+| Risk | Mức | Mitigant |
+|------|-----|----------|
+| Heuristic escalate sai | TB | Conservative threshold + `auto_escalate=false` |
+| Cache stale (mtime miss) | Thấp | TTL safety net + DISABLED flag |
+| Binary không bundle rg/wasm | TB | Defer v1.2, npx vẫn primary |
+| Windsurf protocol đổi | Cao (kế thừa v1.0) | OpenAI backend là đường chính, windsurf free fallback |
