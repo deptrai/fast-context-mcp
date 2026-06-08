@@ -85,6 +85,22 @@ openai-backend.mjs (friendlyError layer)
 - `bun build --compile` — source giữ nguyên ESM.
 - **Rủi ro:** `@vscode/ripgrep` (binary) + `sql.js` (WASM) có thể không bundle. Nếu fail → defer sang v1.2, giữ npx primary. KHÔNG block các story khác.
 
+### ADR-6 (v1.2): `deepgrep_get` là stateless local-read tool, tách biệt search pipeline
+- Tool nhận `{file, ranges}[]` → đọc file local → format snippets → trả về. KHÔNG gọi API, KHÔNG ghi cache, KHÔNG giữ session search→get.
+- **Thiết kế theo MCP best practices:**
+  - **Structured schema (Option A):** `files: z.array(z.object({ file: z.string(), ranges: z.array(z.tuple([z.number(), z.number()])) }))`. Self-documenting, type-safe. Field `file` = absolute path, khớp `full_path` mà `deepgrep_search` trả về.
+  - **Stateless:** MCP tool call stateless by design. Không liên kết session với search trước → giảm complexity & bug surface. Agent tự truyền ranges (copy từ output search).
+  - **Graceful degradation:** file không tồn tại/binary/range out-of-bounds → annotation rõ ràng, KHÔNG throw. `readSnippets` đã handle sẵn.
+  - **Token-aware:** tôn trọng `FC_SNIPPET_MAX_LINES` / `FC_LINE_MAX_CHARS`, đánh dấu khi truncate.
+  - **Tool description nêu rõ 2-step workflow:** "Use after deepgrep_search to fetch exact code without reading whole files" — để LLM consumer biết khi nào gọi.
+  - **Consistent:** đăng ký theo pattern `deepgrep_status` (server.tool + async handler), không thêm dependency.
+- **Trade-off:** Không có session liên kết search→get → agent phải tự truyền ranges. Chấp nhận: đổi lấy zero-state, zero-coupling. Đúng triết lý boring tech.
+
+### ADR-7 (v1.2): Warm cache là MCP tool, KHÔNG phải CLI subcommand
+- deepgrep là stdio MCP server, không phải CLI app. Thêm CLI arg-parsing vào entry point = over-engineering + 2 code path.
+- Nếu làm FR8: expose `deepgrep_warm` tool (pattern giống status) thay vì `deepgrep warm` command.
+- **Khuyến nghị:** DEFER FR8 trừ khi đo được repo-map computation là bottleneck thật (hiện ~100ms cho medium repo — chưa phải vấn đề). Ship Story 3.1 trước, đánh giá lại sau.
+
 ## 4. Module mới (target)
 
 ```
@@ -126,6 +142,8 @@ query → shouldEscalate(query)?
 | 1.3 Better error UX | openai-backend.mjs / shared.mjs, server.mjs |
 | 2.1 Status tool | health.mjs (new), server.mjs |
 | 2.2 Single binary | package.json, .github/workflows |
+| 3.1 deepgrep_get (v1.2) | server.mjs (tool mới), snippets.mjs (tái dụng, no change) |
+| 3.2 Warm cache (v1.2, defer) | server.mjs (tool mới), cache.mjs, shared.mjs (getRepoMap) |
 
 ## 8. Risks
 

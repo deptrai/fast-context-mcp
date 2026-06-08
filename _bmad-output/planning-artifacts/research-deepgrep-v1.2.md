@@ -1,146 +1,186 @@
 ---
-title: "deepgrep v1.2 — Research & Đề xuất tính năng"
+title: "deepgrep v1.2 — Research, Competitive Deep-Dive & Đề xuất tính năng"
 author: "Mary (Business Analyst)"
 date: 2026-06-07
-status: draft
+status: approved
 baseline: "v1.1 done (auto-escalation, cache, error UX, deepgrep_status, binary build)"
-stepsCompleted: []
 ---
 
 # deepgrep v1.2 — Research & Đề xuất tính năng
 
-> Tài liệu phân tích của analyst. Mục tiêu: chọn hướng phát triển tiếp theo cho deepgrep dựa trên (1) lợi thế cốt lõi hiện có, (2) bối cảnh cạnh tranh 2026, (3) chi phí/lợi ích thực tế cho một sản phẩm bạn tự dùng trước.
+---
+
+## Phần 1: Competitive Deep-Dive — Augment Context Engine
+
+### 1.1 Cơ chế kỹ thuật
+
+Augment Context Engine là một **semantic index + live knowledge graph** chứ không chỉ là RAG thông thường:
+
+| Layer | Chi tiết |
+|-------|----------|
+| Vector DB | Embedding các chunk (function/class/block), HNSW index, sub-200ms retrieval |
+| Knowledge Graph | Map relationship: call sites, imports, db usage, cross-service dependency |
+| Commit history | "Context Lineage" — mỗi commit được tóm tắt bằng Gemini 2.0 Flash → embed → searchable |
+| External sources | GitHub, Jira, Confluence, Notion, Linear, Sentry, Stripe, Glean |
+
+**Scale:** Có thể index 400,000–500,000 files. Update trong vài giây sau commit. Processing speed: thousands of files/second trên Google Cloud + NVIDIA GPU.
+
+**Hai mode:**
+- **Local** (`auggie` CLI chạy MCP stdio) — index working directory, real-time uncommitted changes
+- **Remote** (`https://api.augmentcode.com/mcp`) — hosted, default branches, cross-repo, CI/server
+
+### 1.2 Token Efficiency
+
+Augment giải quyết token budget qua 3 cơ chế:
+1. **Smart retrieval** — chỉ lấy chunk liên quan, không dump cả repo vào prompt
+2. **Commit compression** — raw diff → tóm tắt ngắn gọn (Gemini Flash), tiết kiệm token giữ ý
+3. **Multi-stage ranking** — vector search shortlist → rerank → top-K vào context
+
+Kết quả benchmark họ tự công bố:
+- 71% improvement trên Cursor (Claude Opus 4.5), completeness +60%, correctness +5×
+- 80% improvement trên Claude Code (Opus 4.5)
+- **Ít tool call hơn → token cost thấp hơn** (nghịch lý: chất lượng cao hơn mà token ít hơn)
+- SWE-bench: 70.6% vs đối thủ ~54%
+
+### 1.3 Pricing (credit-based, 2025-2026)
+
+| Plan | Giá | Credits |
+|------|-----|---------|
+| Indie | ~$20/tháng | 40,000 credits |
+| Standard | $60/dev/tháng | 130,000 credits/seat |
+| Max | $200/dev/tháng | 450,000 credits/seat |
+| Enterprise | Custom | Custom |
+
+**Per-query cost (Context Engine MCP):** ~40–70 credits/query  
+**Top-up:** $15 per 24,000 credits (~$0.000625/credit)
+
+**Ví dụ task cost (Intent multi-agent):**
+- Fix 500 error: 88 credits (Haiku) → 293 credits (Sonnet) → 488 credits (Opus)
+- Multi-tenant billing system: 976 credits (Opus)
+
+### 1.4 Điểm mạnh thật sự của Augment
+
+1. **Scale thật** — 400k+ files, sub-200ms retrieval. Không tool nào zero-index làm được điều này ở scale này.
+2. **Temporal context** — Context Lineage là khác biệt độc đáo. Augment trả lời được "tại sao code này như vậy?" và "feature flag này implement như thế nào trước đây?"
+3. **Cross-repo** — Multiple repos, cross-service dependency map. Thứ deepgrep chưa có.
+4. **MCP ecosystem** — Expose Context Engine qua MCP standard → ai cũng dùng được (Claude Code, Cursor, Kiro).
+5. **"Infinite context" UX** — User không phải nghĩ về context window hay token budget.
+
+### 1.5 Điểm yếu / Giới hạn của Augment
+
+| Giới hạn | Chi tiết |
+|----------|---------|
+| **Setup nặng** | Cần cài Auggie CLI, cấu hình GitHub App, chờ index build (hàng trăm nghìn file = nhiều phút lần đầu) |
+| **Vendor lock-in** | Index proprietary, không export được. Đổi tool = mất hết context |
+| **Chi phí** | $60+/tháng/dev. Enterprise cần negotiate |
+| **Không local-first** | Mode remote cần connect Augment cloud, không fully offline |
+| **Stale branch issue** | Remote mode chỉ index default branch, feature branch chưa push không được thấy |
+| **Hallucination vẫn còn** | Báo cáo 1.5-4.6% hallucination rate ngay cả với Context Engine |
+| **Dependency nặng** | Google Cloud infrastructure — không self-host dễ dàng |
 
 ---
 
-## 1. Xuất phát điểm: deepgrep là gì sau v1.1
+## Phần 2: So sánh định vị deepgrep vs Augment
 
-Sau v1.1, deepgrep đã có:
+```
+                    deepgrep              Augment Context Engine
+─────────────────────────────────────────────────────────────────
+Setup               ✅ npx deepgrep       ❌ CLI + GitHub App + chờ index
+Zero-index          ✅ Không cần index    ❌ Cần build index trước
+Local-first         ✅ Chạy offline       ⚠️ Mode local có, remote cần cloud
+Cost                ✅ Free (Windsurf)    ❌ $60+/dev/tháng
+BYOM                ✅ OpenAI-compat      ⚠️ Chọn model nhưng qua Augment proxy
+Scale (file count)  ⚠️ Giới hạn tree     ✅ 400k+ files
+Cross-repo          ❌ Chưa có            ✅ Có
+Temporal context    ❌ Chưa có            ✅ Context Lineage (commit history)
+Token retrieval UX  ⚠️ Chỉ trả file+range ✅ Full context assembled
+MCP standard        ✅ Có                 ✅ Có
+```
 
-- **Hai mode** — `deepgrep_search` (quick, SWE-1.6 free) và `deepgrep_deep` (gpt-5.5/deep-search combo).
-- **Auto-escalation** — quick tự nâng lên deep khi query đa-vế hoặc trả 0 kết quả (`escalate.mjs`).
-- **Cache** — mtime-hash invalidation, không cache kết quả rỗng (giữ escalation hoạt động).
-- **Error UX** — `friendlyError()` map 429/403/401 thành thông điệp actionable.
-- **`deepgrep_status`** — health-check tool (key, model, Devin Desktop detection).
-- **Binary** — `bun build --compile` (59MB, chạy không cần Node).
-- **Concurrent-safe** — config truyền qua opts, không mutate `process.env`.
+### Phân tích cạnh tranh thật
 
-**Lợi thế cốt lõi (moat) cần bảo vệ:**
-1. **Zero-index** — không cần build/embedding index, chạy ngay trên repo bất kỳ. Đây là điểm khác biệt lớn nhất so với Augment Context Engine, codesearch (cần index).
-2. **Reasoning, không chỉ match** — AI suy luận multi-hop, tìm theo intent.
-3. **BYOM** — chạy được mọi backend OpenAI-compatible (9router, Anthropic proxy, Ollama).
+**Augment KHÔNG phải đối thủ trực tiếp của deepgrep.** Họ đang đánh vào enterprise với đội phát triển lớn (400k+ files, cross-service, $60+/dev/tháng). deepgrep đánh vào:
+- Individual dev / solo/team nhỏ (không muốn/không có ngân sách Augment)
+- Repo nhỏ-vừa cần search nhanh không muốn setup
+- BYOM use case (tự bring key, không bị lock vào vendor)
+- "Tôi muốn search ngay, không cần chờ index 10 phút"
 
----
-
-## 2. Bối cảnh cạnh tranh (2026)
-
-| Sản phẩm | Cơ chế | Điểm mạnh | Điểm yếu so với deepgrep |
-|----------|--------|-----------|--------------------------|
-| Augment Context Engine | Embedding index, real-time | Recall cao, context lớn | Cần index, setup nặng, không zero-config |
-| codesearch / CodeGrok | Index + semantic | Nhanh khi đã index | Mất bước index, ràng buộc hạ tầng |
-| GitHub MCP | API GitHub | Tích hợp GitHub sâu | Chỉ repo trên GitHub, không local |
-| grep / ripgrep | Text/regex | Cực nhanh, free | Không hiểu intent, không multi-hop |
-| ai-grep | LLM + grep | Hiểu intent cơ bản | Một-shot, không reasoning loop, không cache |
-
-**Nhận định (red flag):** Code search MCP đang **commodity hóa** — nhiều tool mới ra, ai cũng "AI + grep". Để không bị nhạt nhòa, deepgrep cần khuếch đại 2 thứ mà tool index-based **không làm được rẻ**: (a) zero-config trên repo lạ, (b) tiết kiệm token cho agent.
+**Insight quan trọng từ Augment benchmark:** Bài blog của Augment có trích bài `jxnl.co` — "Why grep beat embeddings in our SWE-bench agent." Augment đang giải quyết vấn đề tương tự deepgrep nhưng từ góc enterprise. **Zero-index reasoning (cách deepgrep hoạt động) thực ra là approach phù hợp với mid-size repos** — điều Augment cũng ngầm thừa nhận khi họ dùng retrieval + reasoning thay vì chỉ embedding.
 
 ---
 
-## 3. Insight then chốt: "token budget" là chiến trường thật của MCP
+## Phần 3: Đề xuất tính năng v1.2
 
-Khi deepgrep chạy trong một MCP client (Claude/Cursor/Kiro), người dùng thực sự **không phải con người mà là một AI agent khác**. Agent đó có context window hữu hạn và bị tính tiền theo token. Pain point lớn nhất của agent không phải "tìm có đúng file không" (deepgrep đã làm tốt) mà là:
+### F1 — `deepgrep_get`: Token-efficient two-stage retrieval ⭐ ƯU TIÊN SỐ 1
 
-> Sau khi deepgrep trả về 10 file + line ranges, agent phải **đọc lại toàn bộ file** để lấy code → đốt token gấp nhiều lần.
+**Insight từ Augment:** Augment nổi bật vì **assembled context** — agent không phải tự đọc thêm file. deepgrep hiện chỉ trả file + ranges, buộc agent phải `read_file` lại → tốn token.
 
-Đây chính là khe hở để deepgrep tạo khác biệt rõ rệt mà **không phá moat zero-index**.
+**Giải pháp:** Tool `deepgrep_get(file, ranges)` — trả **chính xác đoạn code** theo ranges, đã có line numbers. Tái dùng `snippets.mjs` đã viết sẵn (`readSnippets`).
 
----
+```
+Workflow 2 bước (token-efficient):
+1. deepgrep_search → file paths + ranges [rẻ: không kèm code]
+2. deepgrep_get → lấy đúng đoạn code [chính xác: không đọc thừa]
 
-## 4. Bốn đề xuất tính năng v1.2
+So với Augment: Augment làm bước 1+2 trong 1 call (tiện hơn nhưng tốn token hơn).
+deepgrep tách ra → agent chọn file nào cần đọc thêm → tiết kiệm hơn cho repo nhỏ.
+```
 
-### F1 — Token-efficient two-stage retrieval ⭐ (ƯU TIÊN CAO NHẤT)
+**Marketing positioning:** "Get the exact code, not the whole file. 10x token savings vs read_file."
 
-**Vấn đề:** deepgrep trả file + ranges, nhưng agent phải tự `read_file` lại → tốn token, mất round-trip.
-
-**Giải pháp:** Thêm tool `deepgrep_get(file, ranges)` — trả về **chính xác** đoạn code theo range, đã có line numbers, đã cap theo budget. Tận dụng `snippets.mjs` (đã viết sẵn `readSnippets`).
-
-Quy trình 2 bước cho agent:
-1. `deepgrep_search` → danh sách file + ranges (rẻ, không kèm code).
-2. `deepgrep_get` → lấy đúng đoạn code cần, không đọc thừa.
-
-**Vì sao đây là feature số 1:**
-- Tận dụng code có sẵn (`snippets.mjs`) → effort thấp, risk thấp.
-- Marketing rõ ràng: **"10x token savings"** — đo được, demo được.
-- Không đụng tới moat zero-index, chỉ làm dày thêm.
-- Giải đúng pain point thật của persona (AI agent), không phải tính năng "cho có".
+**Effort:** Thấp — `readSnippets()` đã có, chỉ cần wrap thành MCP tool.
 
 **Acceptance (nháp):**
-- `deepgrep_get` nhận `file` (path) + `ranges` ([[s,e]]) hoặc nhận trực tiếp output id từ search trước.
-- Tôn trọng `FC_SNIPPET_MAX_LINES` / `FC_LINE_MAX_CHARS`.
-- Bỏ qua range out-of-bounds, đánh dấu binary file.
-- Output có line numbers để agent trích dẫn chính xác.
-
-**Files:** `src/snippets.mjs` (tái dùng), `src/server.mjs` (thêm tool), README.
+- Input: `file` (path) + `ranges` ([[start, end], ...]) hoặc `files` array (output format từ deepgrep_search)
+- Output: code với line numbers, đúng format `snippets.mjs`
+- Tôn trọng `FC_SNIPPET_MAX_LINES`, `FC_LINE_MAX_CHARS`
+- Bỏ qua range out-of-bounds, handle binary file
+- Không cần API key (pure local file read)
 
 ---
 
 ### F2 — Cross-repo search (`project_paths: string[]`)
 
-**Vấn đề:** Hiện chỉ search 1 repo. Dev thực tế hay làm việc trên monorepo tách thành nhiều repo (frontend + backend + shared lib).
+**Insight từ Augment:** Cross-repo là killer feature của họ. Deepgrep cần có phiên bản đơn giản hơn (không cần index, chỉ cần chạy search parallel trên N paths).
 
-**Giải pháp:** Cho phép `project_paths` là mảng; chạy song song rồi merge + rank kết quả theo relevance.
+**Giải pháp:** `project_paths: string[]` thay cho `project_path`. Chạy song song, merge + dedup kết quả.
 
-**Đánh giá:** Giá trị thật nhưng phức tạp hơn (merge/rank, tree size bùng nổ, token cost cao). **Để v1.2 sau F1, hoặc v1.3.**
+**Đánh giá:** Giá trị thật. Effort trung bình (parallel execution + merge logic + tree size bùng nổ khi nhiều repo lớn). **Để v1.2 sau F1** hoặc v1.3.
 
 ---
 
 ### F3 — Warm cache command
 
-**Vấn đề:** Lần query đầu trên repo lớn vẫn chậm.
+**Giải pháp:** CLI/tool hâm nóng cache cho các query phổ biến hoặc precompute repo map.
 
-**Giải pháp:** Lệnh `deepgrep warm` / tool hâm nóng cache các query phổ biến hoặc precompute repo map.
-
-**Đánh giá:** Nice-to-have, effort thấp. Có thể kèm F1 nếu còn budget. Không phải động lực chính.
+**Đánh giá:** Nice-to-have. Ship kèm F1 nếu còn budget. Không phải differentiator chính.
 
 ---
 
-### F4 — Symbol-aware mode (KHÔNG khuyến nghị)
+### F4 — Symbol-aware mode (KHÔNG làm)
 
-**Ý tưởng:** Parse AST / build symbol table để tìm theo symbol chính xác.
-
-**Khuyến cáo: KHÔNG làm.** Lý do:
-- Phá vỡ moat **zero-index** — đây là thứ khiến deepgrep khác biệt.
-- Đụng trực diện với tool index-based đã trưởng thành (đánh vào sân nhà của họ).
-- Effort cao, phải maintain parser đa ngôn ngữ.
-- Nếu cần symbol-level, đã có `code-review-graph` / ctags — không cần deepgrep ôm.
+**Lý do loại bỏ:** Phá moat zero-index. Đụng sân index-based tools đã mature. Không nên làm.
 
 ---
 
-## 5. Khuyến nghị của analyst
+## Phần 4: Kết luận & Hành động tiếp theo
 
-**Chốt v1.2 = F1 (token-efficient retrieval) làm trọng tâm**, kèm F3 (warm cache) nếu còn budget. Hoãn F2 sang v1.3, loại bỏ F4.
+### Positioning statement sau v1.2
 
-Lý do ra quyết định:
-- **Khác biệt hóa đo được** giữa thị trường đang commodity hóa: "deepgrep tiết kiệm 10x token cho agent của bạn".
-- **Bảo vệ moat** zero-index thay vì đánh đổi nó.
-- **ROI cao**: tận dụng `snippets.mjs` có sẵn → ship nhanh, ít rủi ro.
-- **Đúng persona**: tối ưu cho AI-agent-as-user, không phải tính năng phô trương.
+> deepgrep: **Zero-setup semantic code search. No index. BYOM. Token-efficient.**  
+> For teams who want AI-level code understanding without the enterprise setup tax.
 
-### Đề xuất scope v1.2
+### Scope v1.2 được đề xuất
 
-| Ưu tiên | Feature | Effort | Trạng thái |
-|---------|---------|--------|------------|
-| P0 | F1 — `deepgrep_get` two-stage retrieval | Thấp | Đề xuất làm |
-| P1 | F3 — Warm cache | Thấp | Optional |
+| Priority | Feature | Effort | Decision |
+|----------|---------|--------|----------|
+| P0 | F1 — `deepgrep_get` two-stage retrieval | Thấp | ✅ Làm |
+| P1 | F3 — Warm cache | Thấp | Optional, ship kèm |
 | P2 | F2 — Cross-repo | Trung-Cao | Hoãn v1.3 |
-| — | F4 — Symbol-aware | Cao | Loại bỏ |
+| — | F4 — Symbol-aware | Cao | ❌ Loại bỏ |
 
----
+### Next steps
 
-## 6. Next steps
-
-1. Nếu chốt hướng F1 → chuyển sang PM (`bmad-create-prd`) viết PRD v1.2 hoặc đi thẳng spec/story cho `deepgrep_get`.
-2. Thiết kế chi tiết API `deepgrep_get` (input shape: file+ranges vs reference-id từ search trước).
-3. Cập nhật README với positioning "token-efficient" + so sánh token tiết kiệm.
-
-> Phần benchmark token-saving cụ thể sẽ đo sau khi prototype F1 — dùng cùng repo 9router để đối chứng "đọc full file" vs "deepgrep_get range".
+1. Update **epics-deepgrep-v1.1.md** thêm Epic 3 (v1.2 features) — không tạo file mới
+2. Update **prd-deepgrep-v1.1.md** thêm FR7/FR8 — không tạo file mới
+3. Khi sẵn sàng dev: tạo Story 3.1 (deepgrep_get) trong implementation-artifacts

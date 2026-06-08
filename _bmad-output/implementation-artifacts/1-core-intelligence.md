@@ -157,3 +157,19 @@ _Code review 2026-06-07 — 3 lớp adversarial (Blind Hunter, Edge Case Hunter,
 - [x] [Review][Patch] Dead code + gọi `shouldEscalate` 2 lần dư — gọi 1 lần, bỏ block rỗng, reuse refineHint. [deepgrep/src/server.mjs:257-281]
 - [x] [Review][Defer] apiKey rỗng → `Authorization: Bearer ` → 401 [deepgrep/src/openai-backend.mjs:203] — deferred, friendlyError đã xử lý 401 gracefully; chỉ là hardening nhỏ
 - [x] [Review][Defer] Nhánh fast-openai non-escalated bỏ qua `include_snippets` [deepgrep/src/server.mjs:300] — deferred, pre-existing, không do diff này gây ra
+
+---
+
+### Review Findings — commit `dc289c8` (2026-06-07)
+
+_Code review 2026-06-07 — 3 lớp adversarial (Blind Hunter, Edge Case Hunter, Acceptance Auditor) trên commit `dc289c8` "harden health check + escalation, track test suite" (5 files, +204/−50). Spec context: epics/architecture v1.1. Triage: 1 decision-needed, 3 patch, 3 defer, 10 dismissed. Lưu ý: commit trải nhiều story — escalate/error UX thuộc Story 1.2/1.3 (file này); health.mjs thuộc Story 2.1 (2-developer-experience)._
+
+- [x] [Review][Decision→Patch] Escalation marker hồi quy về dynamic reason — vi phạm AC#10 + đảo ngược quyết định D1=Option1. `server.mjs:275` đổi từ literal `[escalated to deep mode: complex query]` (đã chốt ở review Story 1) thành `[escalated to deep mode: ${escalateReason}]` → in ra ví dụ `[escalated to deep mode: multi-hop keyword: "flow"]` hoặc `[escalated to deep mode: complex query: 3 clauses detected]`. AC#10 yêu cầu literal cố định; D1 đã giữ reason nội bộ. Không có test nào assert literal này nên không vỡ test. [deepgrep/src/server.mjs:275] — **Resolved (auto, best-practices) = Option 1**: khôi phục literal `[escalated to deep mode: complex query]`; `escalateReason` vẫn tính nhưng chỉ dùng nội bộ, không leak ra output. (Lý do: spec compliance, stable machine-readable marker, không lộ regex.)
+
+- [x] [Review][Patch] HTTP status regex over-correct, bỏ sót định dạng "<code>:" và "<code>." — `/(?<![\d.:])429(?![\d.:])/` từ chối "429:"/"403:"/"429." mà bản trước `/\b429\b/` vẫn match → mất friendly error (FR3/AC#12-13) cho chuỗi kiểu "HTTP 403: Forbidden". Fix: đổi lookahead thành `(?!\d)`, giữ lookbehind để loại port/version. [deepgrep/src/server.mjs:91-93] — **applied** (lookahead `(?!\d)`; verified: "429:"/"429." match, ":429"/"4290"/"v1.429" không match).
+- [x] [Review][Patch] checkHealth() trim key nhưng KHÔNG trim URL — `DEEPGREP_API_URL` có whitespace đầu/cuối sống sót (chỉ strip trailing slash) → fetch throw → endpoint báo "unreachable" sai. Fix: thêm `.trim()` cho URL. [deepgrep/src/health.mjs:92] — **applied** (`.trim().replace(/\/+$/, "")`; 7/7 test health.test.mjs vẫn pass).
+- [x] [Review][Patch] `\bwork\b` làm rớt "works"/"working" khỏi multi-hop detection — `\bhow\b does.*\bwork\b` không còn match "how does X works/working". `\bhow\b` là fix precision tốt (tránh "show"); `\bwork\b` siết quá. Fix: `\bwork` hoặc `\bwork(s|ing)?\b`. Giảm nhẹ: "workflow" vẫn bắt qua keyword "flow". [deepgrep/src/escalate.mjs:18] — **applied** (`\bwork(s|ing)?\b`; verified: "how does X work/works/working" → escalate, "show me config" → không).
+
+- [x] [Review][Defer] formatHealthReport chưa phòng thủ report thiếu `config`/`models` (TypeError) [deepgrep/src/health.mjs] — deferred, pre-existing (checkHealth luôn cấp đủ field; chỉ là hardening cho hàm pure exported).
+- [x] [Review][Defer] _pingModel chỉ coi đúng HTTP 200 là "ok" (bỏ 201/202/204) [deepgrep/src/health.mjs:38] — deferred, pre-existing (không do dc289c8; 200 là success thực tế của chat/completions).
+- [x] [Review][Defer] Query non-English + auto_escalate=false → không refineHint, cũng không escalate (gap AC 1.2(f)) [deepgrep/src/server.mjs:258] — deferred, pre-existing (code cũ cũng ép refineHint=null khi auto_escalate=false).

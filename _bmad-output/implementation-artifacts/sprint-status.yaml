@@ -1,10 +1,11 @@
-# Sprint Status — deepgrep v1.1
+# Sprint Status — deepgrep v1.1 / v1.2
 # STATUS: backlog | ready-for-dev | in-progress | review | done
 
-last_updated: 2026-06-07
-project_name: deepgrep v1.1
+last_updated: 2026-06-07 (Story 3.1 review complete)
+project_name: deepgrep
 
 development_status:
+  # ── v1.1 (done) ──────────────────────────────────────────
   # Story 1: Core Intelligence (P0)
   # Covers: cache rename + verify, auto-escalation, error UX
   # Modules: cache.mjs, escalate.mjs (new), server.mjs, openai-backend.mjs
@@ -14,3 +15,13 @@ development_status:
   # Covers: deepgrep_status tool, single binary build
   # Modules: health.mjs (new), server.mjs, package.json
   2-developer-experience: done
+
+  # ── v1.2 (backlog) ───────────────────────────────────────
+  # Story 3.1: deepgrep_get — Token-efficient two-stage retrieval (P0)
+  # Covers: FR7 — tool mới tái dụng snippets.mjs, không cần API key
+  # Modules: server.mjs (tool mới), snippets.mjs (tái dụng)
+  3-token-efficient-retrieval: done
+
+  # Story 3.2: Warm cache (P1 optional)
+  # Covers: FR8 — precompute repo map + cache warming
+  3-warm-cache: backlog
