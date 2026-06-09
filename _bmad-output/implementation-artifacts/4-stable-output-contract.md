@@ -2,7 +2,7 @@
 story_id: "4.1"
 story_key: "4-stable-output-contract"
 epic: 4
-status: ready-for-dev
+status: review
 created: 2026-06-08
 baseline_commit: caabb7d
 covers: ["FR9", "ADR-8"]
@@ -38,48 +38,48 @@ This is the FIRST story of Epic 4 (Portable Context Engine, v1.3) — execution 
 
 ### T1. Create `deepgrep/src/contract.mjs` (NEW module)
 
-- [ ] Export `serializeSearchResult(result, opts, format)`:
+- [x] Export `serializeSearchResult(result, opts, format)`:
   - `format === "text"` → delegate to existing `_formatResult` (import or pass-in)
   - `format === "json"` → `toJsonContract(result, opts)`
-- [ ] Implement `toJsonContract(result, opts)` building ADR-8 schema from internal `{files, rg_patterns, _meta, error?}`:
+- [x] Implement `toJsonContract(result, opts)` building ADR-8 schema from internal `{files, rg_patterns, _meta, error?}`:
   - `schema_version: "1.0"`
   - `files`: map each to `{path, full_path, ranges, role: null, score: null}` (role/score reserved for 4.3/4.2)
   - `grep_keywords`: from `result.rg_patterns` (dedup, filter len ≥ 3 — match existing `_formatResult` logic)
   - `meta`: `{backend, mode, cache_hit, retrieval: "lexical", index_used: false, tree_depth, tree_size_kb, fell_back}` from `result._meta`
   - `error`: include `{error}` field when `result.error` present
-- [ ] Export `serializeSnippetResult(snippetResult, format)` for `deepgrep_get` JSON path
-- [ ] `node --check` passes
+- [x] Export `serializeSnippetResult(snippetResult, format)` for `deepgrep_get` JSON path
+- [x] `node --check` passes
 
 ### T2. Wire `output_format` param into 3 tools in `server.mjs`
 
-- [ ] Add zod param to `deepgrep_search`, `deepgrep_deep`, `deepgrep_get`:
+- [x] Add zod param to `deepgrep_search`, `deepgrep_deep`, `deepgrep_get`:
   ```js
   output_format: z.enum(["text", "json"]).default("text")
     .describe("Output format. 'text' (default) for human-readable; 'json' for stable machine-parseable contract.")
   ```
-- [ ] In each handler: after producing `result`, call `serializeSearchResult(result, opts, output_format)` instead of inline `_formatResult`
-- [ ] `deepgrep_get`: route through `serializeSnippetResult`
-- [ ] CRITICAL: text path must stay identical — when `output_format="text"`, call the SAME `_formatResult` with SAME args as today
+- [x] In each handler: after producing `result`, call `serializeSearchResult(result, opts, output_format)` instead of inline `_formatResult`
+- [x] `deepgrep_get`: route through `serializeSnippetResult`
+- [x] CRITICAL: text path must stay identical — when `output_format="text"`, call the SAME `_formatResult` with SAME args as today
 
 ### T3. Refactor `_formatResult` access (minimal)
 
-- [ ] `_formatResult` currently lives in `server.mjs`. Either: (a) export it so `contract.mjs` imports it, OR (b) move it into `contract.mjs` and re-import into `server.mjs`. Prefer (a) — smaller blast radius.
-- [ ] Do NOT change `_formatResult` logic. Only change its visibility.
+- [x] `_formatResult` currently lives in `server.mjs`. Either: (a) export it so `contract.mjs` imports it, OR (b) move it into `contract.mjs` and re-import into `server.mjs`. Prefer (a) — smaller blast radius.
+- [x] Do NOT change `_formatResult` logic. Only change its visibility.
 
 ### T4. Unit tests `deepgrep/test/contract.test.mjs`
 
-- [ ] AC1: search result → JSON has schema_version + files + grep_keywords + meta
-- [ ] AC3/AC4: meta has all fields incl. retrieval="lexical", index_used=false
-- [ ] AC6: snippet result → JSON shape
-- [ ] AC2: text mode output unchanged (snapshot or equality vs _formatResult direct call)
-- [ ] error result → JSON includes error field
-- [ ] Pattern: `node:test`, follow `server-format-result.test.mjs` style (mirror or import)
+- [x] AC1: search result → JSON has schema_version + files + grep_keywords + meta
+- [x] AC3/AC4: meta has all fields incl. retrieval="lexical", index_used=false
+- [x] AC6: snippet result → JSON shape
+- [x] AC2: text mode output unchanged (snapshot or equality vs _formatResult direct call)
+- [x] error result → JSON includes error field
+- [x] Pattern: `node:test`, follow `server-format-result.test.mjs` style (mirror or import)
 
 ### T5. Verify
 
-- [ ] `node --check deepgrep/src/contract.mjs && node --check deepgrep/src/server.mjs`
-- [ ] `node --test 'test/**/*.test.mjs'` — all pass incl. new contract tests
-- [ ] Manual: call each tool with `output_format=json` via MCP, confirm schema
+- [x] `node --check deepgrep/src/contract.mjs && node --check deepgrep/src/server.mjs`
+- [x] `node --test 'test/**/*.test.mjs'` — all pass incl. new contract tests
+- [x] Manual: call each tool with `output_format=json` via MCP, confirm schema
 
 ## Dev Notes
 
