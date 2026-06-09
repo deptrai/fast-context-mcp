@@ -2,7 +2,7 @@
 story_id: "4.1"
 story_key: "4-stable-output-contract"
 epic: 4
-status: review
+status: in-progress
 created: 2026-06-08
 baseline_commit: caabb7d
 covers: ["FR9", "ADR-8"]
@@ -140,3 +140,20 @@ Both backends return this shape (verified in `core.mjs` + `openai-backend.mjs`):
 
 _(populated during dev-story)_
 
+
+### Review Findings
+
+- [x] [Review][Patch] Roadmap table v2.0: "Gated / aspirational" không dịch [epics.md]
+- [x] [Review][Patch] Roadmap table v1.5: "Future" không dịch [epics.md]
+- [x] [Review][Patch] Section heading: "Bản đồ Phủ sóng FR" → "Bản đồ Bao phủ FR" ("phủ sóng" = độ phủ tín hiệu viễn thông) [epics.md]
+- [x] [Review][Patch] Story 4.1 title: "stable" bổ nghĩa sai cho "cấu trúc" thay vì "hợp đồng" — nên là "Hợp đồng output ổn định có cấu trúc" [epics.md]
+- [x] [Review][Patch] Story 4.1 AC5: "được test bao phủ cho search + get" → "được bao phủ bởi các bài test cho search + get" [epics.md]
+- [x] [Review][Patch] FR10 + Story 4.2 ACs: "cưỡng chế" → "bắt buộc" (sai ngữ nghĩa cho "enforced") [epics.md]
+- [x] [Review][Patch] Story 3.2 Notes: "Bộc lộ dưới dạng" → "Cung cấp dưới dạng" (sai sắc thái cho "Expose as") [epics.md]
+- [x] [Review][Patch] Story 5.1/5.2 titles: "(có cổng)" → "(có cổng kiểm soát)" cho nhất quán [epics.md]
+- [x] [Review][Patch] Story 3.2 title: "Warm cache" giữ nguyên tiếng Anh, thân dịch là "làm nóng cache" [epics.md]
+- [x] [Review][Patch] Requirements Inventory: "NFR6 (budget pack)" → "NFR6 (pack budget)" (đảo thứ tự từ) [epics.md]
+- [x] [Review][Patch] Requirements Inventory: "NFRs" → "NFR" bỏ số nhiều không có chủ ý [epics.md]
+- [x] [Review][Patch] Inconsistent "done": ba cách dịch "xong"/"Xong"/"đã xong" — chuẩn hóa về "đã xong" [epics.md]
+- [x] [Review][Patch] FR Coverage Map: xác nhận FR3–FR8 rows thay thế đúng bản gốc tiếng Anh (diff hiển thị là pure additions) [epics.md]
+- [x] [Review][Defer] "bypass" → "bỏ qua" mất nghĩa vượt qua cơ chế [epics.md] — deferred, chấp nhận được ở mức tài liệu summary
