@@ -7,155 +7,155 @@ inputDocuments:
 lastUpdated: 2026-06-07
 ---
 
-# deepgrep v1.1 — Epic Breakdown
+# deepgrep v1.1 — Phân rã Epic
 
-## Requirements Inventory
+## Bảng kê Yêu cầu
 
-**v1.1/v1.2 (done):**
-- FR1: Auto-escalation quick → deep
-- FR2: Cache verify & hoàn thiện
-- FR3: Better error UX
-- FR4: Health-check tool `deepgrep_status`
-- FR5: Query refinement (quick mode)
-- FR6: Single binary build
-- FR7: Token-efficient `deepgrep_get`
-- FR8: Warm cache (closed wont-do by data)
+**v1.1/v1.2 (đã xong):**
+- FR1: Tự động nâng cấp quick → deep
+- FR2: Kiểm chứng & hoàn thiện cache
+- FR3: Trải nghiệm lỗi tốt hơn
+- FR4: Công cụ kiểm tra tình trạng `deepgrep_status`
+- FR5: Tinh chỉnh truy vấn (chế độ quick)
+- FR6: Build binary đơn
+- FR7: `deepgrep_get` tiết kiệm token
+- FR8: Làm nóng cache (đóng dạng wont-do theo dữ liệu)
 
 **v1.3 (backlog — Context Engine):**
-- FR9: Stable structured output contract (`output_format=json`, single `contract.mjs`)
-- FR10: Context Pack tool `deepgrep_pack` (budget-enforced, role labels)
-- FR11: Result ranking & dedup (`rank.mjs` pure module)
+- FR9: Hợp đồng output ổn định có cấu trúc (`output_format=json`, một `contract.mjs` duy nhất)
+- FR10: Công cụ Context Pack `deepgrep_pack` (budget bắt buộc, nhãn vai trò)
+- FR11: Xếp hạng & khử trùng lặp kết quả (module thuần `rank.mjs`)
 
-**v2.0 (gated):**
-- FR12: Optional indexed tier (`deepgrep index`, same contract as zero-index)
+**v2.0 (có cổng kiểm soát):**
+- FR12: Tầng đánh chỉ mục tùy chọn (`deepgrep index`, cùng hợp đồng với zero-index)
 
-**NFRs:** NFR1-5 (latency/deps/compat), NFR6 (pack budget), NFR7 (role heuristic no-AST).
+**NFR:** NFR1-5 (độ trễ/phụ thuộc/tương thích), NFR6 (pack budget), NFR7 (heuristic vai trò không-AST).
 
-## FR Coverage Map
+## Bản đồ Bao phủ FR
 
-| FR | Story | Status |
+| FR | Story | Trạng thái |
 |----|-------|--------|
-| FR2, NFR1 | 1.1 | ✅ done |
-| FR1, NFR2 | 1.2 (multi-hop/empty) | ✅ done |
-| FR5 | 1.2 (non-English refineHint) | ✅ done — co-located with FR1 in shouldEscalate |
-| FR3 | 1.3 | ✅ done |
-| FR4 | 2.1 | ✅ done |
-| FR6 | 2.2 | ✅ done |
-| FR7 | 3.1 | ✅ done |
-| FR8 | 3.2 | 🚫 wont-do (data-driven, see story file) |
+| FR2, NFR1 | 1.1 | ✅ xong |
+| FR1, NFR2 | 1.2 (multi-hop/empty) | ✅ xong |
+| FR5 | 1.2 (refineHint non-English) | ✅ xong — đặt chung với FR1 trong shouldEscalate |
+| FR3 | 1.3 | ✅ xong |
+| FR4 | 2.1 | ✅ xong |
+| FR6 | 2.2 | ✅ xong |
+| FR7 | 3.1 | ✅ xong |
+| FR8 | 3.2 | 🚫 wont-do (do dữ liệu quyết định, xem file story) |
 | FR9, ADR-8 | 4.1 | 🔲 backlog |
 | FR11 | 4.3 | 🔲 backlog |
 | FR10, NFR6, NFR7, ADR-9 | 4.2 | 🔲 backlog |
-| FR12, ADR-10 | 5.1 | 🔒 gated |
-| FR12 (multi-repo) | 5.2 | 🔒 gated |
+| FR12, ADR-10 | 5.1 | 🔒 có cổng kiểm soát |
+| FR12 (multi-repo) | 5.2 | 🔒 có cổng kiểm soát |
 
-## Epic List
+## Danh sách Epic
 
-- **Epic 1: Core Intelligence & Reliability (P0)** — cache, auto-escalation, error UX. ✅ **Done**
-- **Epic 2: Developer Experience (P1)** — health-check tool, single binary. ✅ **Done**
-- **Epic 3: Token-Efficient Retrieval (v1.2)** — deepgrep_get two-stage retrieval, warm cache. 🔲 **Backlog**
+- **Epic 1: Trí tuệ Lõi & Độ tin cậy (P0)** — cache, tự động nâng cấp, trải nghiệm lỗi. ✅ **Xong**
+- **Epic 2: Trải nghiệm Lập trình viên (P1)** — công cụ kiểm tra tình trạng, build binary đơn. ✅ **Xong**
+- **Epic 3: Truy xuất Tiết kiệm Token (v1.2)** — truy xuất hai giai đoạn deepgrep_get, warm cache. 🔲 **Backlog**
 
-**Thứ tự v1.1:** Story 1.1 → 1.2 → 1.3 → 2.1 → 2.2 (tất cả done)  
-**Thứ tự v1.2:** Story 3.1 → 3.2 (optional)
-
----
-
-## Epic 1: Core Intelligence & Reliability
-
-### Story 1.1: Verify & complete result cache
-
-As a daily user,
-I want identical queries on an unchanged codebase to return instantly from cache,
-so that I save time and API tokens.
-
-**Acceptance Criteria:**
-- **Given** một query đã chạy thành công, **When** chạy lại y hệt (cùng project_path + model, codebase chưa đổi), **Then** trả từ cache, KHÔNG gọi API, < 100ms
-- **Given** file trong project thay đổi (mtime), **When** chạy lại query, **Then** cache miss → gọi API
-- **Given** output, **Then** metadata chứa `cache_hit: true|false`
-- **Given** `DEEPGREP_CACHE_DISABLED=1`, **Then** cache bị bypass hoàn toàn
-- **Given** `DEEPGREP_CACHE_TTL_MS=N`, **Then** TTL áp dụng đúng
-
-### Story 1.2: Auto-escalation quick → deep (covers FR1 + FR5)
-
-As a user who doesn't want to pick tools,
-I want deepgrep to automatically use deep mode for complex queries and surface refinement hints for vague queries,
-so that I always get good results without choosing.
-
-**Acceptance Criteria — FR1 (escalation):**
-- **Given** query ≥3 mệnh đề hoặc chứa keywords multi-hop (trace/flow/across/from...to), **When** gọi deepgrep_search, **Then** tự escalate sang deep mode
-- **Given** quick mode trả 0 results, **When** auto_escalate=true, **Then** retry bằng deep mode (1 lần)
-- **Given** query đơn giản 1 vế, **Then** chạy quick, KHÔNG escalate (không tăng latency)
-- **Given** `auto_escalate=false`, **Then** không bao giờ escalate
-- **Given** output sau escalation, **Then** ghi rõ `[escalated to deep mode]`
-
-**Acceptance Criteria — FR5 (query refinement, co-located with shouldEscalate):**
-- **Given** query non-English (non-ASCII detected) hoặc mơ hồ, **Then** `shouldEscalate` trả `refineHint` gợi ý rephrase bằng code terms tiếng Anh
-- **Given** non-English query escalate được, **Then** vừa escalate sang deep vừa append refineHint vào output (không loại trừ nhau)
-
-**Why co-located:** `shouldEscalate(query)` đã đánh giá toàn bộ query characteristics (clauses + keywords + non-ASCII) trong một pass — tách FR5 thành story riêng sẽ duplicate logic. ACs phía trên phân biệt rõ FR1 vs FR5 contribution.
-
-### Story 1.3: Better error UX
-
-As a user hitting rate limits or auth errors,
-I want clear actionable error messages,
-so that I know how to fix the problem.
-
-**Acceptance Criteria:**
-- **Given** HTTP 429, **Then** message: "Model {X} rate limited — retrying / try DEEPGREP_MODEL=deep-search"
-- **Given** HTTP 403, **Then** message gợi ý dùng combo deep-search hoặc model khác
-- **Given** không có key, **Then** signup URL (giữ behavior v1.0)
-- **Given** deep model fail sau retry, **Then** suggest 1 fallback model cụ thể
+**Thứ tự v1.1:** Story 1.1 → 1.2 → 1.3 → 2.1 → 2.2 (tất cả đã xong)  
+**Thứ tự v1.2:** Story 3.1 → 3.2 (tùy chọn)
 
 ---
 
-## Epic 2: Developer Experience
+## Epic 1: Trí tuệ Lõi & Độ tin cậy
 
-### Story 2.1: Health-check tool `deepgrep_status`
+### Story 1.1: Kiểm chứng & hoàn thiện cache kết quả
 
-As a new user setting up deepgrep,
-I want a status command to verify my config,
-so that I can debug setup without guessing.
+Với tư cách người dùng hằng ngày,
+tôi muốn các truy vấn giống hệt nhau trên một codebase không đổi trả về tức thì từ cache,
+để tôi tiết kiệm thời gian và token API.
 
-**Acceptance Criteria:**
-- **Given** tool `deepgrep_status` được gọi, **Then** trả về: key hợp lệ? (ping test), models available (list + test 1-2), Devin Desktop installed?, config hiện tại (URL/model/fast_backend)
-- **Given** key sai/thiếu, **Then** báo rõ + signup URL
-- **Given** Devin không cài, **Then** note fast mode cần openai backend
+**Tiêu chí Chấp nhận:**
+- **Cho** một truy vấn đã chạy thành công, **Khi** chạy lại y hệt (cùng project_path + model, codebase chưa đổi), **Thì** trả từ cache, KHÔNG gọi API, < 100ms
+- **Cho** file trong project thay đổi (mtime), **Khi** chạy lại truy vấn, **Thì** cache miss → gọi API
+- **Cho** output, **Thì** metadata chứa `cache_hit: true|false`
+- **Cho** `DEEPGREP_CACHE_DISABLED=1`, **Thì** cache bị bỏ qua hoàn toàn
+- **Cho** `DEEPGREP_CACHE_TTL_MS=N`, **Thì** TTL áp dụng đúng
 
-### Story 2.2: Single binary build
+### Story 1.2: Tự động nâng cấp quick → deep (bao gồm FR1 + FR5)
 
-As a user without Node,
-I want a standalone binary,
-so that I can run deepgrep without installing Node.
+Với tư cách người dùng không muốn phải chọn công cụ,
+tôi muốn deepgrep tự động dùng chế độ deep cho truy vấn phức tạp và đưa ra gợi ý tinh chỉnh cho truy vấn mơ hồ,
+để tôi luôn nhận kết quả tốt mà không phải lựa chọn.
 
-**Acceptance Criteria:**
-- **Given** `bun build --compile`, **Then** tạo binary chạy được không cần Node runtime
-- **Given** CI release, **Then** build binary cho macOS/Linux/Windows kèm release artifacts
-- **Given** binary, **When** chạy `deepgrep_search`, `deepgrep_deep`, `deepgrep_status`, `deepgrep_get` qua MCP stdio, **Then** mỗi tool trả output identical với npx version (cùng schema, cùng error handling, cùng env vars)
-- **Given** binary, **When** native deps (`@vscode/ripgrep`, `sql.js`) không bundle được, **Then** defer per ADR-5 và document fallback path (npx vẫn primary distribution)
+**Tiêu chí Chấp nhận — FR1 (nâng cấp):**
+- **Cho** truy vấn ≥3 mệnh đề hoặc chứa từ khóa multi-hop (trace/flow/across/from...to), **Khi** gọi deepgrep_search, **Thì** tự động nâng cấp sang chế độ deep
+- **Cho** chế độ quick trả 0 kết quả, **Khi** auto_escalate=true, **Thì** thử lại bằng chế độ deep (1 lần)
+- **Cho** truy vấn đơn giản 1 vế, **Thì** chạy quick, KHÔNG nâng cấp (không tăng độ trễ)
+- **Cho** `auto_escalate=false`, **Thì** không bao giờ nâng cấp
+- **Cho** output sau khi nâng cấp, **Thì** ghi rõ `[escalated to deep mode]`
+
+**Tiêu chí Chấp nhận — FR5 (tinh chỉnh truy vấn, đặt chung với shouldEscalate):**
+- **Cho** truy vấn non-English (phát hiện non-ASCII) hoặc mơ hồ, **Thì** `shouldEscalate` trả `refineHint` gợi ý diễn đạt lại bằng thuật ngữ code tiếng Anh
+- **Cho** truy vấn non-English có thể nâng cấp, **Thì** vừa nâng cấp sang deep vừa thêm refineHint vào output (không loại trừ nhau)
+
+**Vì sao đặt chung:** `shouldEscalate(query)` đã đánh giá toàn bộ đặc tính truy vấn (mệnh đề + từ khóa + non-ASCII) trong một lượt — tách FR5 thành story riêng sẽ trùng lặp logic. Các AC phía trên phân biệt rõ phần đóng góp của FR1 so với FR5.
+
+### Story 1.3: Trải nghiệm lỗi tốt hơn
+
+Với tư cách người dùng gặp giới hạn tần suất (rate limit) hoặc lỗi xác thực,
+tôi muốn nhận thông báo lỗi rõ ràng, khả thi,
+để tôi biết cách khắc phục vấn đề.
+
+**Tiêu chí Chấp nhận:**
+- **Cho** HTTP 429, **Thì** thông báo: "Model {X} rate limited — retrying / try DEEPGREP_MODEL=deep-search"
+- **Cho** HTTP 403, **Thì** thông báo gợi ý dùng tổ hợp deep-search hoặc model khác
+- **Cho** không có key, **Thì** trả URL đăng ký (giữ hành vi v1.0)
+- **Cho** model deep fail sau khi thử lại, **Thì** gợi ý 1 model fallback cụ thể
+
+---
+
+## Epic 2: Trải nghiệm Lập trình viên
+
+### Story 2.1: Công cụ kiểm tra tình trạng `deepgrep_status`
+
+Với tư cách người dùng mới đang thiết lập deepgrep,
+tôi muốn một lệnh kiểm tra tình trạng để xác minh cấu hình,
+để tôi gỡ lỗi quá trình thiết lập mà không phải đoán mò.
+
+**Tiêu chí Chấp nhận:**
+- **Cho** công cụ `deepgrep_status` được gọi, **Thì** trả về: key hợp lệ? (kiểm tra ping), các model khả dụng (liệt kê + test 1-2), Devin Desktop đã cài chưa?, cấu hình hiện tại (URL/model/fast_backend)
+- **Cho** key sai/thiếu, **Thì** báo rõ + URL đăng ký
+- **Cho** Devin chưa cài, **Thì** ghi chú chế độ fast cần backend openai
+
+### Story 2.2: Build binary đơn
+
+Với tư cách người dùng không có Node,
+tôi muốn một binary độc lập,
+để tôi chạy được deepgrep mà không cần cài Node.
+
+**Tiêu chí Chấp nhận:**
+- **Cho** `bun build --compile`, **Thì** tạo binary chạy được không cần Node runtime
+- **Cho** CI release, **Thì** build binary cho macOS/Linux/Windows kèm release artifacts
+- **Cho** binary, **Khi** chạy `deepgrep_search`, `deepgrep_deep`, `deepgrep_status`, `deepgrep_get` qua MCP stdio, **Thì** mỗi công cụ trả output giống hệt bản npx (cùng schema, cùng xử lý lỗi, cùng biến môi trường)
+- **Cho** binary, **Khi** các native deps (`@vscode/ripgrep`, `sql.js`) không bundle được, **Thì** hoãn lại theo ADR-5 và ghi tài liệu đường fallback (npx vẫn là kênh phân phối chính)
 
 
 ---
 
-## Epic 3: Token-Efficient Retrieval (v1.2)
+## Epic 3: Truy xuất Tiết kiệm Token (v1.2)
 
-> Insight từ competitive analysis (Augment Context Engine): Augment nổi bật vì **assembled context** — agent không phải tự đọc thêm file sau search. deepgrep hiện chỉ trả file + ranges, buộc agent phải `read_file` lại → tốn token. Epic này đóng gap đó với approach token-efficient hơn Augment (agent chọn chủ động file nào cần đọc).
+> Insight từ phân tích cạnh tranh (Augment Context Engine): Augment nổi bật nhờ **assembled context** — agent không phải tự đọc thêm file sau khi search. deepgrep hiện chỉ trả file + ranges, buộc agent phải `read_file` lại → tốn token. Epic này lấp khoảng trống đó với cách tiếp cận tiết kiệm token hơn Augment (agent chủ động chọn file nào cần đọc).
 
-### Story 3.1: Tool `deepgrep_get` — Two-stage code retrieval
+### Story 3.1: Công cụ `deepgrep_get` — Truy xuất code hai giai đoạn
 
-As a developer (or AI agent) using deepgrep,
-I want to fetch exact code snippets by file + line ranges without reading the whole file,
-so that I save tokens and get only the code I actually need.
+Với tư cách lập trình viên (hoặc AI agent) dùng deepgrep,
+tôi muốn lấy đúng đoạn code theo file + line ranges mà không phải đọc cả file,
+để tôi tiết kiệm token và chỉ nhận đúng code mình thực sự cần.
 
-**Acceptance Criteria:**
-- **Given** một list `{file, ranges}` (output từ deepgrep_search), **When** gọi `deepgrep_get`, **Then** trả code đúng range, có line numbers, không đọc ngoài range
-- **Given** `FC_SNIPPET_MAX_LINES` set, **Then** tổng lines trả về không vượt budget đó
-- **Given** file binary, **Then** trả `[binary file — snippet omitted]` không crash
-- **Given** range out-of-bounds, **Then** bỏ qua gracefully, trả range hợp lệ còn lại
-- **Given** mảng `files` rỗng (hoặc `ranges` rỗng), **Then** trả message rõ ràng ("No files/ranges provided") KHÔNG crash
-- **Given** không cần API key, **Then** tool hoạt động pure local (không gọi API)
-- **Given** output, **Then** format rõ ràng: `file_path`, `line_start`, `line_end`, code block với line numbers
+**Tiêu chí Chấp nhận:**
+- **Cho** một list `{file, ranges}` (output từ deepgrep_search), **Khi** gọi `deepgrep_get`, **Thì** trả code đúng range, có line numbers, không đọc ngoài range
+- **Cho** `FC_SNIPPET_MAX_LINES` được set, **Thì** tổng số dòng trả về không vượt budget đó
+- **Cho** file binary, **Thì** trả `[binary file — snippet omitted]` không crash
+- **Cho** range vượt biên (out-of-bounds), **Thì** bỏ qua một cách nhẹ nhàng, trả các range hợp lệ còn lại
+- **Cho** mảng `files` rỗng (hoặc `ranges` rỗng), **Thì** trả thông báo rõ ràng ("No files/ranges provided") KHÔNG crash
+- **Cho** không cần API key, **Thì** công cụ hoạt động thuần local (không gọi API)
+- **Cho** output, **Thì** định dạng rõ ràng: `file_path`, `line_start`, `line_end`, code block có line numbers
 
-**Ví dụ output mẫu (reference cho test assert):**
+**Ví dụ output mẫu (tham chiếu cho test assert):**
 ```
 ## src/auth.mjs (L10-14)
 10 | export function login(user, pass) {
@@ -165,124 +165,123 @@ so that I save tokens and get only the code I actually need.
 14 |   return record.hash === hash;
 ```
 
-**Notes kỹ thuật:**
+**Ghi chú kỹ thuật:**
 - Tái dụng `src/snippets.mjs` → `readSnippets(files)` (đã implement sẵn)
-- Thêm tool vào `src/server.mjs` tương tự deepgrep_status (không cần API key)
-- **Input schema (ADR-6, Option A):** `files: z.array(z.object({ file: z.string(), ranges: z.array(z.tuple([z.number(), z.number()])) }))` — structured, self-documenting. Field `file` = absolute path (khớp `full_path` từ deepgrep_search).
+- Thêm công cụ vào `src/server.mjs` tương tự deepgrep_status (không cần API key)
+- **Input schema (ADR-6, Option A):** `files: z.array(z.object({ file: z.string(), ranges: z.array(z.tuple([z.number(), z.number()])) }))` — có cấu trúc, tự mô tả. Trường `file` = absolute path (khớp `full_path` từ deepgrep_search).
 - Stateless: không liên kết session search→get. Agent tự truyền ranges từ output search.
-- Tool description nêu rõ 2-step workflow để LLM consumer biết khi nào gọi.
+- Mô tả công cụ nêu rõ quy trình 2 bước để LLM consumer biết khi nào gọi.
 - Xem `architecture.md` ADR-6.
 
 ---
 
-### Story 3.2: Warm cache (optional, DEFER)
+### Story 3.2: Làm nóng cache (tùy chọn, HOÃN)
 
-As a user working repeatedly on the same repo,
-I want to pre-warm the search cache for common queries,
-so that my first real query returns instantly.
+Với tư cách người dùng làm việc lặp lại trên cùng một repo,
+tôi muốn làm nóng (pre-warm) cache search cho các truy vấn phổ biến,
+để truy vấn thật đầu tiên của tôi trả về tức thì.
 
-**Acceptance Criteria:**
-- **Given** MCP tool `deepgrep_warm` được gọi với project_path, **Then** precompute repo map và cache metadata
-- **Given** sau warm, query search đầu tiên không phải rebuild repo map từ đầu
+**Tiêu chí Chấp nhận:**
+- **Cho** công cụ MCP `deepgrep_warm` được gọi với project_path, **Thì** tính trước repo map và cache metadata
+- **Cho** sau khi warm, truy vấn search đầu tiên không phải rebuild repo map từ đầu
 
-**Notes (ADR-7):**
-- Expose dưới dạng **MCP tool `deepgrep_warm`**, KHÔNG phải CLI subcommand (deepgrep là stdio MCP server, không phải CLI app).
-- **DEFER** trừ khi đo được repo-map computation là bottleneck thật (hiện ~100ms cho medium repo). Ship Story 3.1 trước, đánh giá lại sau.
+**Ghi chú (ADR-7):**
+- Cung cấp dưới dạng **công cụ MCP `deepgrep_warm`**, KHÔNG phải CLI subcommand (deepgrep là stdio MCP server, không phải CLI app).
+- **HOÃN** trừ khi đo được việc tính repo-map là nút thắt thật sự (hiện ~100ms cho repo cỡ trung). Ship Story 3.1 trước, đánh giá lại sau.
 - Xem `architecture.md` ADR-7.
 
 ---
 
-## Epic 4: Portable Context Engine (v1.3) — 🔲 Backlog
+## Epic 4: Context Engine Di động (v1.3) — 🔲 Backlog
 
-> Vision shift (2026-06-08): deepgrep evolves from "semantic search tool" → "zero-index context engine". Same job as Augment Context Engine, different architecture: on-demand assembly, no persistent index. See prd.md §9.
+> Chuyển dịch tầm nhìn (2026-06-08): deepgrep tiến hóa từ "công cụ semantic search" → "context engine không-chỉ-mục (zero-index)". Cùng công việc với Augment Context Engine, kiến trúc khác: lắp ráp theo nhu cầu, không có chỉ mục thường trú. Xem prd.md §9.
 
-**Theme:** Assemble task-specific code context under an explicit token budget — without indexing.
+**Chủ đề:** Lắp ráp ngữ cảnh code theo từng tác vụ dưới một budget token rõ ràng — mà không cần đánh chỉ mục.
 
-**Architecture constraints:** ADR-8 (single contract module), ADR-9 (pack = thin orchestrator, 4 binding constraints), ADR-10 (forward-compat for indexed tier). See architecture.md.
+**Ràng buộc kiến trúc:** ADR-8 (một module contract duy nhất), ADR-9 (pack = orchestrator mỏng, 4 ràng buộc bắt buộc), ADR-10 (tương thích tiến cho tầng đánh chỉ mục). Xem architecture.md.
 
-**Execution order (dependency-driven):** 4.1 → 4.3 → 4.2. Contract first (4.1), then ranking/roles produce the structured fields (4.3), then pack assembles ranked+labeled input under budget (4.2). Building pack before ranking would force inline ranking that contradicts 4.3.
+**Thứ tự thực thi (do phụ thuộc dẫn dắt):** 4.1 → 4.3 → 4.2. Contract trước (4.1), rồi ranking/roles tạo ra các trường có cấu trúc (4.3), rồi pack lắp ráp đầu vào đã xếp hạng+gán nhãn dưới budget (4.2). Xây pack trước ranking sẽ buộc phải ranking inline, mâu thuẫn với 4.3.
 
-### Story 4.1: Stable structured output contract  [do FIRST]
+### Story 4.1: Hợp đồng output ổn định có cấu trúc  [làm ĐẦU TIÊN]
 
-As an agent builder,
-I want stable JSON/metadata output from deepgrep tools,
-so that I can reliably compose deepgrep with other tools and agents.
+Với tư cách người xây dựng agent,
+tôi muốn output JSON/metadata ổn định từ các công cụ deepgrep,
+để tôi có thể kết hợp deepgrep với các công cụ và agent khác một cách đáng tin cậy.
 
-**Acceptance Criteria:**
-- **Given** any search/deep/get call, **When** `output_format=json`, **Then** returns the ADR-8 schema incl. `schema_version`, `files[]`, `grep_keywords[]`, `meta{backend,mode,cache_hit,retrieval,index_used,...}`
-- **Given** the forward-looking fields, **Then** `retrieval="lexical"` and `index_used=false` always (reserved for Epic 5 — non-breaking)
-- **Given** existing text mode (default), **Then** unchanged (backward compat)
-- **Given** all serialization, **Then** it lives in ONE module `src/contract.mjs` — no per-tool JSON branches
-- **Given** JSON output, **Then** covered by tests for search + get
+**Tiêu chí Chấp nhận:**
+- **Cho** bất kỳ lời gọi search/deep/get, **Khi** `output_format=json`, **Thì** trả về schema ADR-8 gồm `schema_version`, `files[]`, `grep_keywords[]`, `meta{backend,mode,cache_hit,retrieval,index_used,...}`
+- **Cho** các trường hướng tới tương lai, **Thì** `retrieval="lexical"` và `index_used=false` luôn luôn (dành riêng cho Epic 5 — không phá vỡ tương thích)
+- **Cho** chế độ text hiện có (mặc định), **Thì** không thay đổi (tương thích ngược)
+- **Cho** toàn bộ serialization, **Thì** nằm trong MỘT module `src/contract.mjs` — không có nhánh JSON riêng cho từng công cụ
+- **Cho** output JSON, **Thì** được bao phủ bởi các bài test cho search + get
 
-### Story 4.3: Result ranking + dedup  [do SECOND]
+### Story 4.3: Xếp hạng + khử trùng lặp kết quả  [làm THỨ HAI]
 
-As a developer,
-I want results ordered by usefulness with duplicates merged,
-so that the first few files are usually enough.
+Với tư cách lập trình viên,
+tôi muốn kết quả được sắp theo độ hữu ích với bản trùng được gộp lại,
+để vài file đầu tiên thường là đủ.
 
-**Acceptance Criteria:**
-- **Given** multiple results, **Then** duplicate file paths merged; overlapping ranges in same file merged
-- **Given** a query not asking for tests, **Then** source preferred over test/docs (path heuristic: `/test/`, `.test.`, `__tests__/`)
-- **Given** deep-mode results (LLM already ordered), **Then** rerank only applies for multi-file results or explicit `rerank=true` — default trusts LLM order
-- **Given** ranking logic, **Then** it lives in pure module `src/rank.mjs` (testable in isolation, no tool-handler coupling)
+**Tiêu chí Chấp nhận:**
+- **Cho** nhiều kết quả, **Thì** các đường dẫn file trùng được gộp; các range chồng lấn trong cùng file được gộp
+- **Cho** truy vấn không hỏi về test, **Thì** ưu tiên source hơn test/docs (heuristic theo path: `/test/`, `.test.`, `__tests__/`)
+- **Cho** kết quả chế độ deep (LLM đã sắp xếp rồi), **Thì** rerank chỉ áp dụng cho kết quả nhiều file hoặc khi `rerank=true` rõ ràng — mặc định tin tưởng thứ tự của LLM
+- **Cho** logic ranking, **Thì** nằm trong module thuần `src/rank.mjs` (test được độc lập, không gắn chặt với tool-handler)
 
-### Story 4.2: Context Pack (`deepgrep_pack`)  [do LAST]
+### Story 4.2: Context Pack (`deepgrep_pack`)  [làm CUỐI CÙNG]
 
-As an AI agent,
-I want a compact assembled context pack from search results,
-so that I can answer or edit without reading whole files.
+Với tư cách AI agent,
+tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
+để tôi có thể trả lời hoặc chỉnh sửa mà không cần đọc cả file.
 
-**Acceptance Criteria (bound by ADR-9):**
-- **Given** a query (or files/ranges from prior search), **When** calling `deepgrep_pack`, **Then** returns top snippets grouped by role + ordered (via `src/rank.mjs`), within budget
-- **Given** `max_chars` budget (enforced) and optional `max_lines` (hint), **Then** output never exceeds `max_chars`; dropped snippets reported explicitly
-- **Given** files/ranges supplied directly, **Then** pure local — no API key required (inherits ADR-6 stateless posture)
-- **Given** each snippet, **Then** role label via `src/roles.mjs` heuristic (implementation/caller/config/test/docs/type) — path + filename + match-density only, NO AST / language server
-- **Given** implementation, **Then** reuses `readSnippets` + `formatSnippetToolOutput` (Story 3.1), never duplicates snippet I/O
-- **Given** each role heuristic case, **Then** it ships with a test fixture (guards heuristic creep)
+**Tiêu chí Chấp nhận (ràng buộc bởi ADR-9):**
+- **Cho** một truy vấn (hoặc files/ranges từ search trước), **Khi** gọi `deepgrep_pack`, **Thì** trả về các snippet hàng đầu nhóm theo vai trò + đã sắp xếp (qua `src/rank.mjs`), trong giới hạn budget
+- **Cho** budget `max_chars` (bắt buộc) và `max_lines` tùy chọn (gợi ý), **Thì** output không bao giờ vượt `max_chars`; các snippet bị loại được báo cáo rõ ràng
+- **Cho** files/ranges được cung cấp trực tiếp, **Thì** thuần local — không cần API key (kế thừa thế stateless của ADR-6)
+- **Cho** mỗi snippet, **Thì** nhãn vai trò qua heuristic `src/roles.mjs` (implementation/caller/config/test/docs/type) — chỉ dựa trên path + tên file + mật độ match, KHÔNG dùng AST / language server
+- **Cho** phần implementation, **Thì** tái dụng `readSnippets` + `formatSnippetToolOutput` (Story 3.1), không bao giờ trùng lặp snippet I/O
+- **Cho** mỗi case heuristic vai trò, **Thì** đi kèm một test fixture (chặn việc heuristic phình to)
 
 ---
 
-## Epic 5: Optional Indexed Tier (v2.0) — 🔒 Gated / Aspirational
+## Epic 5: Tầng Đánh Chỉ mục Tùy chọn (v2.0) — 🔒 Có cổng kiểm soát / Khát vọng
 
-> NORTH STAR, NOT BACKLOG. An Augment-style persistent context engine, but local-first and opt-in. Do NOT start until the gate passes. See prd.md §9 North Star.
+> NORTH STAR, KHÔNG PHẢI BACKLOG. Một context engine thường trú kiểu Augment, nhưng local-first và opt-in. KHÔNG bắt đầu cho đến khi cổng kiểm soát được mở. Xem prd.md §9 North Star.
 
-**Gate (≥2 must be measurably true before opening):**
-1. Zero-index measured too slow / recall-poor on large repos
-2. Repeated need for multi-repo or persistent project memory
-3. Agent flows need cross-session context
-4. Repo size exceeds on-demand embedding practicality
+**Cổng kiểm soát (≥2 điều phải đo được là đúng trước khi mở):**
+1. Đo được zero-index quá chậm / recall kém trên repo lớn
+2. Nhu cầu lặp lại về multi-repo hoặc bộ nhớ project thường trú
+3. Các luồng agent cần ngữ cảnh xuyên-phiên (cross-session)
+4. Kích thước repo vượt giới hạn thực tế của embedding theo nhu cầu
 
-**If gate never passes, this epic is never built — and that is an acceptable outcome.** The zero-index moat is the priority.
+**Nếu cổng không bao giờ mở, epic này không bao giờ được xây — và đó là kết cục chấp nhận được.** Lợi thế (moat) zero-index là ưu tiên.
 
-### Story 5.1 (gated): Local-first incremental index
+### Story 5.1 (có cổng kiểm soát): Chỉ mục tăng dần local-first
 
-As a user with a large repo where zero-index is too slow,
-I want an opt-in local index,
-so that retrieval stays fast without sending code to a cloud service.
+Với tư cách người dùng có repo lớn nơi zero-index quá chậm,
+tôi muốn một chỉ mục local opt-in,
+để việc truy xuất vẫn nhanh mà không gửi code lên dịch vụ cloud.
 
-**Acceptance Criteria (draft, refine at gate time):**
-- **Given** `deepgrep index`, **Then** builds local `.deepgrep/` index incrementally (mtime-based)
-- **Given** indexed mode, **Then** same output contract as zero-index (hidden backend)
-- **Given** no index, **Then** zero-index mode still works as default (non-breaking)
-- **Given** BYOM, **Then** embeddings use caller-provided model, no lock-in
-- **Constraint:** still NO symbol graph / refactor / editing (Serena territory)
+**Tiêu chí Chấp nhận (bản nháp, tinh chỉnh lúc mở cổng):**
+- **Cho** `deepgrep index`, **Thì** xây chỉ mục local `.deepgrep/` tăng dần (dựa trên mtime)
+- **Cho** chế độ indexed, **Thì** cùng output contract với zero-index (backend ẩn)
+- **Cho** không có chỉ mục, **Thì** chế độ zero-index vẫn hoạt động như mặc định (không phá vỡ tương thích)
+- **Cho** BYOM, **Thì** embeddings dùng model do caller cung cấp, không khóa nhà cung cấp
+- **Ràng buộc:** vẫn KHÔNG có symbol graph / refactor / editing (đó là địa hạt của Serena)
 
-### Story 5.2 (gated): Multi-repo context (maybe)
+### Story 5.2 (có cổng kiểm soát): Ngữ cảnh đa repo (có thể)
 
-As a developer working across related repos,
-I want context assembly to span multiple local repos,
-so that cross-repo tasks have relevant context.
+Với tư cách lập trình viên làm việc xuyên các repo liên quan,
+tôi muốn việc lắp ráp ngữ cảnh trải rộng nhiều repo local,
+để các tác vụ xuyên-repo có được ngữ cảnh phù hợp.
 
-**Status:** Placeholder. Define only if multi-repo demand is real at gate time.
+**Trạng thái:** Placeholder. Chỉ định nghĩa nếu nhu cầu multi-repo là thật lúc mở cổng.
 
-## Roadmap Summary (updated 2026-06-08)
+## Tóm tắt Roadmap (cập nhật 2026-06-08)
 
-| Version | Theme | Status |
+| Phiên bản | Chủ đề | Trạng thái |
 |---------|-------|--------|
-| v1.1 | Core Intelligence + Developer Experience (Epics 1-2) | ✅ Done |
-| v1.2 | Token-Efficient Retrieval — `deepgrep_get` (Epic 3) | ✅ 3.1 done, 3.2 wont-do |
-| v1.3 | Portable Context Engine (Epic 4) | 🔲 Backlog |
-| v1.5 | Distribution: CLI parity, single binary, integration recipes | 🔲 Future |
-| v2.0 | Optional Indexed Tier (Epic 5) | 🔒 Gated / aspirational |
-
+| v1.1 | Trí tuệ Lõi + Trải nghiệm Lập trình viên (Epic 1-2) | ✅ Xong |
+| v1.2 | Truy xuất Tiết kiệm Token — `deepgrep_get` (Epic 3) | ✅ 3.1 đã xong, 3.2 wont-do |
+| v1.3 | Context Engine Di động (Epic 4) | 🔲 Backlog |
+| v1.5 | Phân phối: CLI parity, binary đơn, công thức tích hợp | 🔲 Tương lai |
+| v2.0 | Tầng Đánh Chỉ mục Tùy chọn (Epic 5) | 🔒 Có cổng / khát vọng |
