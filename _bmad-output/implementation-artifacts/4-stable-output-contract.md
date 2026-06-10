@@ -157,3 +157,42 @@ _(populated during dev-story)_
 - [x] [Review][Patch] Inconsistent "done": ba cách dịch "xong"/"Xong"/"đã xong" — chuẩn hóa về "đã xong" [epics.md]
 - [x] [Review][Patch] FR Coverage Map: xác nhận FR3–FR8 rows thay thế đúng bản gốc tiếng Anh (diff hiển thị là pure additions) [epics.md]
 - [x] [Review][Defer] "bypass" → "bỏ qua" mất nghĩa vượt qua cơ chế [epics.md] — deferred, chấp nhận được ở mức tài liệu summary
+
+---
+
+## Senior Developer Review (AI)
+Date: 2026-06-10 | Reviewers: Blind Hunter + Edge Case Hunter + Acceptance Auditor
+
+### Review Findings
+
+**0 decision-needed · 8 patch · 3 defer · 4 dismissed**
+
+#### Patch items (must fix)
+
+- [ ] [Review][Patch] Pre-escalate path corrupts JSON: unchecked text append after serializeSearchResult [deepgrep/src/server.mjs:308-309]
+- [ ] [Review][Patch] OpenAI fast-path empty-result escalation corrupts JSON: missing output_format guard [deepgrep/src/server.mjs:342]
+- [ ] [Review][Patch] refineHintForOutput dead variable: non-English hint dropped in windsurf/openai fast paths [deepgrep/src/server.mjs:315]
+- [ ] [Review][Patch] Double readSnippets in deepgrep_get JSON path: files read twice, TOCTOU risk [deepgrep/src/server.mjs:525-528]
+- [ ] [Review][Patch] isEmpty uses fragile text-string matching when structural wsEmpty already available [deepgrep/src/server.mjs:374-375]
+- [ ] [Review][Patch] deepgrep_get JSON: path and full_path both absolute — inconsistent with search output schema [deepgrep/src/contract.mjs:78-84]
+- [ ] [Review][Patch] ranges field omitted when undefined: missing ?? [] fallback in toJsonContract [deepgrep/src/contract.mjs:28]
+- [ ] [Review][Patch] result.error serializes to {} if value is an Error object: no defensive String() conversion [deepgrep/src/contract.mjs:52]
+
+#### Deferred items
+
+- [x] [Review][Defer] grep_keywords drops < 3-char patterns (id, db, fs) — pre-existing behavior matching _formatResult, intentional
+- [x] [Review][Defer] raw_response field invisible in JSON contract — pre-existing limitation of search path, not in AC scope
+- [x] [Review][Defer] toSnippetJsonContract `|| null` drops empty-string content — low impact edge case, future hardening
+
+#### Dismissed
+
+- AC7 false positive: test/contract.test.mjs committed in parent repo (7c66fff), auditor only saw submodule diff
+- meta.backend defaults to "windsurf" — intentional per ADR-8 spec
+- index_used/retrieval hardcoded — intentional forward-looking constants per ADR-8
+- toJsonContract null crash — caught by outer try/catch in all call sites
+
+---
+
+### Action Required
+
+Review outcome: **8 patch findings** — story set back to `in-progress` until patches applied.
