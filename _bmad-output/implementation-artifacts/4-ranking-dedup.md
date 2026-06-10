@@ -2,7 +2,7 @@
 story_id: "4.3"
 story_key: "4-ranking-dedup"
 epic: 4
-status: ready-for-dev
+status: review
 created: 2026-06-10
 baseline_commit: b62a7286e93983960f8be64e6bb3da456d17075f
 covers: ["FR11"]
@@ -42,27 +42,27 @@ This is the **SECOND** story of Epic 4. Execution order: **4.1 → 4.3 → 4.2**
 
 ### T1. Create `deepgrep/src/rank.mjs` (NEW — pure module)
 
-- [ ] Export `rankResults(files, opts = {})`:
+- [x] Export `rankResults(files, opts = {})`:
   - Calls `deduplicateFiles(files)` → merged by `full_path`
   - Calls `mergeRanges(f.ranges)` on each file → sorted, non-overlapping intervals
   - If `opts.rerank === true`: calls `sortByRelevance(files, opts)` → source-before-test
   - Returns modified files array; original `result.files` NOT mutated (return new array)
-- [ ] Implement `deduplicateFiles(files)`:
+- [x] Implement `deduplicateFiles(files)`:
   - Group by `full_path`; keep first entry's metadata, concat all ranges
   - Preserve first-occurrence order (insertion order)
-- [ ] Implement `mergeRanges(ranges)`:
+- [x] Implement `mergeRanges(ranges)`:
   - Input: `[[start,end],...]` (1-indexed inclusive)
   - Sort by start; merge overlapping/adjacent (where `end+1 >= nextStart`)
   - Return sorted merged intervals; empty array → empty array
-- [ ] Implement `sortByRelevance(files, opts)`:
+- [x] Implement `sortByRelevance(files, opts)`:
   - `isTestFile(path)`: true if path contains `/test/`, `.test.`, `__tests__/`, `/spec/`, `.spec.`
   - Sort: non-test before test; within each group preserve relative order (stable sort)
-- [ ] `node --check` passes
+- [x] `node --check` passes
 
 ### T2. Integrate `rankResults` into `contract.mjs#serializeSearchResult`
 
-- [ ] Import: `import { rankResults } from "./rank.mjs";`
-- [ ] In `serializeSearchResult`: apply ranking to result BEFORE serializing:
+- [x] Import: `import { rankResults } from "./rank.mjs";`
+- [x] In `serializeSearchResult`: apply ranking to result BEFORE serializing:
   ```js
   export function serializeSearchResult(result, opts, formatText, format = "text") {
     const ranked = { ...result, files: rankResults(result.files || [], opts) };
@@ -70,38 +70,38 @@ This is the **SECOND** story of Epic 4. Execution order: **4.1 → 4.3 → 4.2**
     return formatText(ranked, opts.maxTurns ?? 3, ...);
   }
   ```
-- [ ] `opts.rerank` flows through from tool handler → `serializeSearchResult` → `rankResults`
-- [ ] Both text AND JSON modes get ranked results (consistency)
+- [x] `opts.rerank` flows through from tool handler → `serializeSearchResult` → `rankResults`
+- [x] Both text AND JSON modes get ranked results (consistency)
 
 ### T3. Add `rerank` param to `deepgrep_search` + `deepgrep_deep` in `server.mjs`
 
-- [ ] Add to `deepgrep_search` schema (after `output_format`):
+- [x] Add to `deepgrep_search` schema (after `output_format`):
   ```js
   rerank: z.boolean().default(false)
     .describe("If true, sort results: source files before test/docs. Default false (trusts LLM order).")
   ```
-- [ ] Add to `deepgrep_deep` schema (same position)
-- [ ] Destructure `rerank` in each handler
-- [ ] Pass through to `serializeSearchResult` opts: `{ ..., rerank }`
-- [ ] `deepgrep_get` does NOT get `rerank` — snippet retrieval is not a search result
-- [ ] `node --check deepgrep/src/server.mjs` passes
+- [x] Add to `deepgrep_deep` schema (same position)
+- [x] Destructure `rerank` in each handler
+- [x] Pass through to `serializeSearchResult` opts: `{ ..., rerank }`
+- [x] `deepgrep_get` does NOT get `rerank` — snippet retrieval is not a search result
+- [x] `node --check deepgrep/src/server.mjs` passes
 
 ### T4. Unit tests `test/rank.test.mjs`
 
-- [ ] `deduplicateFiles`: same full_path merged, ranges concatenated, first-occurrence order preserved
-- [ ] `mergeRanges`: overlapping `[[1,10],[5,15]]` → `[[1,15]]`; adjacent `[[1,5],[6,10]]` → `[[1,10]]`; non-overlapping `[[1,3],[5,7]]` → `[[1,3],[5,7]]`; empty → `[]`; single → unchanged
-- [ ] `rankResults` dedup+merge without rerank: order preserved
-- [ ] `rankResults` with `rerank=true`: test files sorted after source
-- [ ] `rankResults` with `rerank=false`: LLM order preserved even when test files precede source
-- [ ] `serializeSearchResult` integration: ranked files appear correctly in JSON output (import from contract.mjs)
-- [ ] Pattern: `node:test`, pure function tests, no I/O, no mocks needed — follow `test/server-format-result.test.mjs` style
+- [x] `deduplicateFiles`: same full_path merged, ranges concatenated, first-occurrence order preserved
+- [x] `mergeRanges`: overlapping `[[1,10],[5,15]]` → `[[1,15]]`; adjacent `[[1,5],[6,10]]` → `[[1,10]]`; non-overlapping `[[1,3],[5,7]]` → `[[1,3],[5,7]]`; empty → `[]`; single → unchanged
+- [x] `rankResults` dedup+merge without rerank: order preserved
+- [x] `rankResults` with `rerank=true`: test files sorted after source
+- [x] `rankResults` with `rerank=false`: LLM order preserved even when test files precede source
+- [x] `serializeSearchResult` integration: ranked files appear correctly in JSON output (import from contract.mjs)
+- [x] Pattern: `node:test`, pure function tests, no I/O, no mocks needed — follow `test/server-format-result.test.mjs` style
 
 ### T5. Verify
 
-- [ ] `node --check deepgrep/src/rank.mjs && node --check deepgrep/src/contract.mjs && node --check deepgrep/src/server.mjs`
-- [ ] `node --test 'test/**/*.test.mjs'` — all pass incl. new rank tests
-- [ ] Manual: call `deepgrep_search` with `rerank=true` → verify source files first
-- [ ] Manual: call `deepgrep_search` with `rerank=false` (default) → verify order unchanged
+- [x] `node --check deepgrep/src/rank.mjs && node --check deepgrep/src/contract.mjs && node --check deepgrep/src/server.mjs`
+- [x] `node --test 'test/**/*.test.mjs'` — all pass incl. new rank tests
+- [x] Manual: call `deepgrep_search` with `rerank=true` → verify source files first
+- [x] Manual: call `deepgrep_search` with `rerank=false` (default) → verify order unchanged
 
 ## Dev Notes
 
