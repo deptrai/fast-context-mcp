@@ -2,7 +2,7 @@
 story_id: "4.1"
 story_key: "4-stable-output-contract"
 epic: 4
-status: in-progress
+status: done
 created: 2026-06-08
 baseline_commit: caabb7d
 covers: ["FR9", "ADR-8"]
@@ -169,14 +169,14 @@ Date: 2026-06-10 | Reviewers: Blind Hunter + Edge Case Hunter + Acceptance Audit
 
 #### Patch items (must fix)
 
-- [ ] [Review][Patch] Pre-escalate path corrupts JSON: unchecked text append after serializeSearchResult [deepgrep/src/server.mjs:308-309]
-- [ ] [Review][Patch] OpenAI fast-path empty-result escalation corrupts JSON: missing output_format guard [deepgrep/src/server.mjs:342]
-- [ ] [Review][Patch] refineHintForOutput dead variable: non-English hint dropped in windsurf/openai fast paths [deepgrep/src/server.mjs:315]
-- [ ] [Review][Patch] Double readSnippets in deepgrep_get JSON path: files read twice, TOCTOU risk [deepgrep/src/server.mjs:525-528]
-- [ ] [Review][Patch] isEmpty uses fragile text-string matching when structural wsEmpty already available [deepgrep/src/server.mjs:374-375]
-- [ ] [Review][Patch] deepgrep_get JSON: path and full_path both absolute — inconsistent with search output schema [deepgrep/src/contract.mjs:78-84]
-- [ ] [Review][Patch] ranges field omitted when undefined: missing ?? [] fallback in toJsonContract [deepgrep/src/contract.mjs:28]
-- [ ] [Review][Patch] result.error serializes to {} if value is an Error object: no defensive String() conversion [deepgrep/src/contract.mjs:52]
+- [x] [Review][Patch] Pre-escalate path corrupts JSON: unchecked text append after serializeSearchResult [deepgrep/src/server.mjs:308-309]
+- [x] [Review][Patch] OpenAI fast-path empty-result escalation corrupts JSON: missing output_format guard [deepgrep/src/server.mjs:342]
+- [x] [Review][Patch] refineHintForOutput dead variable: non-English hint dropped in windsurf/openai fast paths [deepgrep/src/server.mjs:315]
+- [x] [Review][Patch] Double readSnippets in deepgrep_get JSON path: files read twice, TOCTOU risk [deepgrep/src/server.mjs:525-528]
+- [x] [Review][Patch] isEmpty uses fragile text-string matching when structural wsEmpty already available [deepgrep/src/server.mjs:374-375]
+- [x] [Review][Patch] deepgrep_get JSON: path and full_path both absolute — inconsistent with search output schema [deepgrep/src/contract.mjs:78-84]
+- [x] [Review][Patch] ranges field omitted when undefined: missing ?? [] fallback in toJsonContract [deepgrep/src/contract.mjs:28]
+- [x] [Review][Patch] result.error serializes to {} if value is an Error object: no defensive String() conversion [deepgrep/src/contract.mjs:52]
 
 #### Deferred items
 
