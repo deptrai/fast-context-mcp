@@ -202,6 +202,7 @@ v2.0 MAY add an optional indexed tier for large repos where zero-index hits meas
 - M1. deepgrep_search response time < 10s median (zero-index). ✅ v1.1
 - M2. Cache hit < 100ms. ✅ v1.1
 - M3. Token cost per task reduced when using deepgrep_get vs read_file. ✅ v1.2
-- M4. Context Pack returns relevant snippets within budget (recall@3 ≥ 70% on internal benchmark). 🔲 v1.3
+- M4. Context Pack returns relevant snippets within budget (recall@3 ≥ 70% on internal benchmark). ✅ v1.3 (83.3% chainlens, 91.7% large monorepo)
 - M5. Agent integration recipes adopted by ≥ 3 distinct MCP clients. 🔲 v1.5
+- M6. Cross-repo search returns correct files across ≥2 project_paths with <15s p50. 🔲 v1.5
 
