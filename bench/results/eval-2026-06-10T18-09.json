@@ -1,0 +1,200 @@
+{
+  "date": "2026-06-10T18:09:17.120Z",
+  "node": "v25.9.0",
+  "project_path": "/Users/luisphan/Documents/fast-context-mcp/deepgrep",
+  "metrics": {
+    "recall_at_1": 0.6666666666666666,
+    "recall_at_3": 0.6666666666666666,
+    "recall_at_5": 0.6666666666666666,
+    "m4_pass": false,
+    "n": 12
+  },
+  "results": [
+    {
+      "query": "cache key hashing mtime hash sha256",
+      "expected": [
+        "cache.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/cache.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/core.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/openai-backend.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 2996,
+      "error": null
+    },
+    {
+      "query": "role labeling heuristics path patterns implementation",
+      "expected": [
+        "roles.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/roles.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/pack.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 2578,
+      "error": null
+    },
+    {
+      "query": "context pack budget enforcement max_chars dropped",
+      "expected": [
+        "pack.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/pack.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/server.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/contract.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/snippets.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 2677,
+      "error": null
+    },
+    {
+      "query": "auto escalation quick to deep mode shouldEscalate",
+      "expected": [
+        "escalate.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/escalate.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/server.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 2341,
+      "error": null
+    },
+    {
+      "query": "read file snippet line ranges readFileSync",
+      "expected": [
+        "snippets.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/snippets.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/executor.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/server.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/extract-key.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 2509,
+      "error": null
+    },
+    {
+      "query": "JSON output contract schema serialization ADR-8",
+      "expected": [
+        "contract.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/contract.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/server.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 3516,
+      "error": null
+    },
+    {
+      "query": "ranking deduplication overlapping ranges mergeRanges",
+      "expected": [
+        "rank.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/rank.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/pack.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 1885,
+      "error": null
+    },
+    {
+      "query": "health check tool status report formatHealthReport",
+      "expected": [
+        "health.mjs"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/health.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/test/health.test.mjs",
+        "/Users/luisphan/Documents/fast-context-mcp/deepgrep/src/server.mjs"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 2592,
+      "error": null
+    },
+    {
+      "query": "MCP tool registration deepgrep_search handler server",
+      "expected": [
+        "server.mjs"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 1054,
+      "error": null
+    },
+    {
+      "query": "ripgrep executor rg command dispatch execCommand",
+      "expected": [
+        "executor.mjs"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 518,
+      "error": null
+    },
+    {
+      "query": "openai backend retry 429 rate limit friendlyError",
+      "expected": [
+        "openai-backend.mjs"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 533,
+      "error": null
+    },
+    {
+      "query": "windsurf protobuf core search loop protocol",
+      "expected": [
+        "core.mjs"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 536,
+      "error": null
+    }
+  ]
+}
