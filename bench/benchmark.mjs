@@ -286,3 +286,28 @@ for (const r of [...RESULTS].sort((a,b) => a.mean - b.mean).slice(0, 5))
   console.log(`    ${r.name.padEnd(58)} ${r.mean.toFixed(4)}ms  ops/s=${r.ops.toLocaleString()}`);
 
 console.log("\n" + "═".repeat(100) + "\n");
+
+// ─── Auto-save results ────────────────────────────────────
+
+const RESULTS_DIR = join(__dirname, "results");
+try { mkdirSync(RESULTS_DIR, { recursive: true }); } catch {}
+
+const now = new Date();
+const ts  = now.toISOString().replace(/[:.]/g, "-").slice(0, 16); // YYYY-MM-DDTHH-mm
+const payload = JSON.stringify({
+  date:      now.toISOString(),
+  node:      process.version,
+  platform:  process.platform,
+  arch:      process.arch,
+  results:   RESULTS.map(({ name, mean, p50, p95, p99, ops, iterations }) =>
+               ({ name, mean, p50, p95, p99, ops, iterations })),
+}, null, 2);
+
+const stampedFile = join(RESULTS_DIR, `${ts}.json`);
+const latestFile  = join(RESULTS_DIR, "latest.json");
+
+writeFileSync(stampedFile, payload);
+writeFileSync(latestFile,  payload);
+
+console.log(`  Results saved → bench/results/${ts}.json`);
+console.log(`  Results saved → bench/results/latest.json\n`);
