@@ -1,7 +1,7 @@
 # Sprint Status — deepgrep v1.1 / v1.2
 # STATUS: backlog | ready-for-dev | in-progress | review | done | wont-do | gated
 
-last_updated: 2026-06-10 (Story 4.3 review)
+last_updated: 2026-06-10 (Story 4.3 done)
 project_name: deepgrep
 
 development_status:
@@ -31,7 +31,7 @@ development_status:
   # See prd.md §9, epics.md Epic 4.
   # Execution order (dependency-driven): 4.1 → 4.3 → 4.2 (see architecture.md ADR-8/9)
   4-stable-output-contract: done  # Story 4.1: JSON contract (contract.mjs) — do FIRST
-  4-ranking-dedup: review                # Story 4.3: rank.mjs + dedup — do SECOND
+  4-ranking-dedup: done                   # Story 4.3: rank.mjs + dedup — do SECOND
   4-context-pack: backlog                 # Story 4.2: deepgrep_pack + roles.mjs — do LAST
 
   # ── v2.0 (gated) — Optional Indexed Tier ─────────────────

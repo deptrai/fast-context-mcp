@@ -2,7 +2,7 @@
 story_id: "4.3"
 story_key: "4-ranking-dedup"
 epic: 4
-status: review
+status: done
 created: 2026-06-10
 baseline_commit: b62a7286e93983960f8be64e6bb3da456d17075f
 covers: ["FR11"]
@@ -102,6 +102,10 @@ This is the **SECOND** story of Epic 4. Execution order: **4.1 → 4.3 → 4.2**
 - [x] `node --test 'test/**/*.test.mjs'` — all pass incl. new rank tests
 - [x] Manual: call `deepgrep_search` with `rerank=true` → verify source files first
 - [x] Manual: call `deepgrep_search` with `rerank=false` (default) → verify order unchanged
+
+### Review Findings
+
+- [x] [Review][Patch] Missing `serializeSearchResult` integration test required by AC7 [test/rank.test.mjs:1] — AC7/T4 explicitly require a `serializeSearchResult` integration test proving ranked files appear correctly in JSON output, but `test/rank.test.mjs` only imports/tests `rankResults`; no test imports `contract.mjs` or exercises text/JSON serialization after ranking.
 
 ## Dev Notes
 

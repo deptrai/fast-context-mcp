@@ -116,3 +116,36 @@ describe("edge cases", () => {
   it("null returns empty", () => { assert.deepEqual(rankResults(null), []); });
   it("undefined returns empty", () => { assert.deepEqual(rankResults(undefined), []); });
 });
+
+import { serializeSearchResult } from "../deepgrep/src/contract.mjs";
+import { _formatResult } from "../deepgrep/src/server.mjs";
+
+describe("serializeSearchResult integration — ranked files in JSON output (AC7)", () => {
+  it("ranked files appear in JSON output with source before test when rerank=true", () => {
+    const result = {
+      files: [
+        mkFile("/p/test/a.test.mjs", [[1,5]]),
+        mkFile("/p/src/b.mjs", [[1,5]]),
+      ],
+      rg_patterns: [],
+      _meta: { backend: "windsurf", treeDepth: 3, treeSizeKB: 10 },
+    };
+    const json = JSON.parse(serializeSearchResult(result, { rerank: true }, _formatResult, "json"));
+    assert.equal(json.files[0].full_path, "/p/src/b.mjs");
+    assert.equal(json.files[1].full_path, "/p/test/a.test.mjs");
+  });
+
+  it("order preserved in JSON output when rerank=false", () => {
+    const result = {
+      files: [
+        mkFile("/p/test/a.test.mjs", [[1,5]]),
+        mkFile("/p/src/b.mjs", [[1,5]]),
+      ],
+      rg_patterns: [],
+      _meta: { backend: "windsurf", treeDepth: 3, treeSizeKB: 10 },
+    };
+    const json = JSON.parse(serializeSearchResult(result, { rerank: false }, _formatResult, "json"));
+    assert.equal(json.files[0].full_path, "/p/test/a.test.mjs");
+    assert.equal(json.files[1].full_path, "/p/src/b.mjs");
+  });
+});
