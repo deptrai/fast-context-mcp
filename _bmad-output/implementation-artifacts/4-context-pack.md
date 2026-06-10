@@ -2,7 +2,7 @@
 story_id: "4.2"
 story_key: "4-context-pack"
 epic: 4
-status: ready-for-dev
+status: review
 created: 2026-06-10
 baseline_commit: aebe89a
 covers: ["FR10", "NFR6", "NFR7", "ADR-9"]
@@ -48,23 +48,23 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
 
 ### T1. Create `deepgrep/src/roles.mjs` (NEW — pure module)
 
-- [ ] Export `labelRole({path, full_path, query?, matchDensity?})`:
+- [x] Export `labelRole({path, full_path, query?, matchDensity?})`:
   - Returns: `"implementation" | "caller" | "config" | "test" | "docs" | "type"`
   - Heuristics ALLOWED: path patterns, filename, matchDensity (matches/total_lines ratio)
   - Heuristics FORBIDDEN: AST, tree-sitter, import graph, symbol resolution
-- [ ] Implement heuristic cases:
+- [x] Implement heuristic cases:
   - `test`: `/test/`, `.test.`, `__tests__/`, `/spec/`, `.spec.`
   - `config`: `/config/`, `.config.`, `package.json`, `tsconfig.json`, `.env`
   - `docs`: `/docs/`, `README`, `.md` files
   - `type`: `.d.ts`, `/types/`, `/interfaces/`
   - `implementation`: high matchDensity (>0.3) OR query keywords in filename
   - `caller`: low matchDensity (<0.1) — mentions target but not definition
-- [ ] Guard: if path doesn't match any pattern, default to `"implementation"`
-- [ ] `node --check` passes
+- [x] Guard: if path doesn't match any pattern, default to `"implementation"`
+- [x] `node --check` passes
 
 ### T2. Create `deepgrep/src/pack.mjs` (NEW — orchestrator)
 
-- [ ] Export `packContext({query?, files?, ranges?, max_chars, max_lines?, rerank?})`:
+- [x] Export `packContext({query?, files?, ranges?, max_chars, max_lines?, rerank?})`:
   - Call `rankResults(files, {rerank})` from `rank.mjs` — get deduped+sorted files
   - For each file, call `labelRole({path: file.full_path, query, matchDensity})`
   - Group files by role: `{implementation: [], caller: [], config: [], test: [], docs: [], type: []}`
@@ -74,12 +74,12 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
     - Accumulate chars; stop when budget reached
     - Track dropped: `{role, count, reason: "budget"}`
   - Return `{snippets: [{role, path, ranges, content}], dropped: [{role, count}], meta: {total_chars, budget_used_pct}}`
-- [ ] Budget enforcement: NEVER exceed `max_chars`; `max_lines` is advisory only
-- [ ] `node --check` passes
+- [x] Budget enforcement: NEVER exceed `max_chars`; `max_lines` is advisory only
+- [x] `node --check` passes
 
 ### T3. Add `deepgrep_pack` tool to `server.mjs`
 
-- [ ] Register tool (pattern như `deepgrep_get`):
+- [x] Register tool (pattern như `deepgrep_get`):
   ```js
   server.tool("deepgrep_pack",
     "Assemble ranked, role-labeled context pack from search results. " +
@@ -99,7 +99,7 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
     async ({query, files, max_chars, max_lines, rerank, output_format}) => { ... }
   )
   ```
-- [ ] Handler logic (complete — no `{ ... }` placeholder):
+- [x] Handler logic (complete — no `{ ... }` placeholder):
   ```js
   async ({query, files, max_chars, max_lines, rerank, output_format}) => {
     if (!files || files.length === 0) {
@@ -116,15 +116,15 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
     }
   }
   ```
-- [ ] Text format: group by role, markdown headers, budget report
-- [ ] JSON format: ADR-8 extension `{schema_version, snippets: [{role, path, ranges, content}], dropped, meta}`
+- [x] Text format: group by role, markdown headers, budget report
+- [x] JSON format: ADR-8 extension `{schema_version, snippets: [{role, path, ranges, content}], dropped, meta}`
 
 ### T4. Extend `contract.mjs` với pack serialization
 
-- [ ] Export `serializePackResult(packResult, opts, format)`:
+- [x] Export `serializePackResult(packResult, opts, format)`:
   - `format === "text"` → role-grouped markdown với headers
   - `format === "json"` → ADR-8 contract extension
-- [ ] Text format template:
+- [x] Text format template:
   ```
   # Context Pack (budget: N/M chars used)
   
@@ -139,7 +139,7 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
   
   [N snippets omitted due to budget limit]
   ```
-- [ ] JSON schema extension (ADR-8 compatible):
+- [x] JSON schema extension (ADR-8 compatible):
   ```js
   {
     schema_version: "1.0",
@@ -154,7 +154,7 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
 
 ### T5. Unit tests `test/pack.test.mjs` + `test/roles.test.mjs`
 
-- [ ] `roles.test.mjs`:
+- [x] `roles.test.mjs`:
   - Each heuristic case với test fixture (AC6 requirement)
   - `test` pattern: `/test/auth.test.js` → `"test"`
   - `config` pattern: `/config/database.js`, `package.json` → `"config"`
@@ -163,20 +163,20 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
   - `implementation` high density: `matchDensity: 0.5` → `"implementation"`
   - `caller` low density: `matchDensity: 0.05` → `"caller"`
   - Default fallback: unknown pattern → `"implementation"`
-- [ ] `pack.test.mjs`:
+- [x] `pack.test.mjs`:
   - Budget enforcement: 3 files, budget=100 chars → only first 2 files, dropped report
   - Role grouping: mixed files → grouped by implementation/caller/test order
   - Rerank integration: calls `rankResults` with correct opts
   - Empty input: `files: []` → empty pack with meta
   - JSON vs text output: same input → different serialization formats
-- [ ] Pattern: `node:test`, pure function tests, no I/O except test fixtures
+- [x] Pattern: `node:test`, pure function tests, no I/O except test fixtures
 
 ### T6. Verify
 
-- [ ] `node --check deepgrep/src/roles.mjs && node --check deepgrep/src/pack.mjs && node --check deepgrep/src/contract.mjs && node --check deepgrep/src/server.mjs`
-- [ ] `node --test 'test/**/*.test.mjs'` — all pass including new pack + roles tests
-- [ ] Manual: call `deepgrep_pack` với files/ranges → verify role grouping, budget enforcement
-- [ ] Manual: test both `output_format=text` and `output_format=json`
+- [x] `node --check deepgrep/src/roles.mjs && node --check deepgrep/src/pack.mjs && node --check deepgrep/src/contract.mjs && node --check deepgrep/src/server.mjs`
+- [x] `node --test 'test/**/*.test.mjs'` — all pass including new pack + roles tests
+- [x] Manual: call `deepgrep_pack` với files/ranges → verify role grouping, budget enforcement
+- [x] Manual: test both `output_format=text` and `output_format=json`
 
 ## Dev Notes
 
@@ -334,4 +334,33 @@ test/
 
 ## Dev Agent Record
 
-_(populated during dev-story)_
+### Agent Model Used
+
+claude-sonnet-4-6
+
+### Debug Log
+
+- Red: `test/pack.test.mjs` — "reports dropped snippets in text" failed; `formatPackText` early-returned on `!snippets.length` before reporting dropped items. Fixed by checking `!snippets.length && !dropped.length` before early return.
+- Red: `test/mcp-integration.test.mjs` — "tools/list returns all 4 tools" failed after adding 5th tool. Updated assertion to expect 5 tools including `deepgrep_pack`.
+- Green: 332/332 pass after both fixes.
+
+### Completion Notes List
+
+- Created `deepgrep/src/roles.mjs` — pure `labelRole()` with path/filename/density heuristics. 6 role types, zero AST/LSP. Every heuristic case has fixture in `test/roles.test.mjs` (AC6).
+- Created `deepgrep/src/pack.mjs` — `packContext()` orchestrator: dedup+rank via `rank.mjs`, label via `roles.mjs`, ONE `readSnippets()` call, budget-enforced assembly by priority order (ADR-9).
+- Extended `contract.mjs` with `serializePackResult()` — text: role-grouped markdown + dropped report; JSON: ADR-8 `{schema_version:1.0, pack:{snippets,dropped,meta}, meta:{retrieval,index_used,pack_mode}}`.
+- Updated `server.mjs` — added `packContext`/`serializePackResult` imports + `deepgrep_pack` tool (5th tool). Static imports, not dynamic (consistent with codebase).
+- Created `test/roles.test.mjs` (28 tests) + `test/pack.test.mjs` (14 tests) — node:test, pure functions, tmp fixtures via before/after hooks.
+- Updated `test/mcp-integration.test.mjs` — bumped tool count assertion 4→5.
+
+### File List
+
+- `deepgrep/src/roles.mjs` [NEW]
+- `deepgrep/src/pack.mjs` [NEW]
+- `deepgrep/src/contract.mjs` [UPDATE]
+- `deepgrep/src/server.mjs` [UPDATE]
+- `test/roles.test.mjs` [NEW]
+- `test/pack.test.mjs` [NEW]
+- `test/mcp-integration.test.mjs` [UPDATE]
+- `_bmad-output/implementation-artifacts/4-context-pack.md` [UPDATE]
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` [UPDATE]

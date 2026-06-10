@@ -92,10 +92,10 @@ describe("MCP stdio integration", () => {
     }
   });
 
-  it("tools/list returns all 4 tools", async () => {
+  it("tools/list returns all 5 tools", async () => {
     const res = await client.request(2, "tools/list");
     const names = (res.result?.tools || []).map((t) => t.name).sort();
-    assert.deepEqual(names, ["deepgrep_deep", "deepgrep_get", "deepgrep_search", "deepgrep_status"]);
+    assert.deepEqual(names, ["deepgrep_deep", "deepgrep_get", "deepgrep_pack", "deepgrep_search", "deepgrep_status"]);
   });
 
   it("deepgrep_get returns formatted snippet with line numbers", async () => {
