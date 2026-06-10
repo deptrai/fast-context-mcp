@@ -1,0 +1,182 @@
+{
+  "date": "2026-06-10T18:50:44.456Z",
+  "node": "v25.9.0",
+  "project_path": "/Users/luisphan/Documents/9router",
+  "metrics": {
+    "recall_at_1": 0,
+    "recall_at_3": 0,
+    "recall_at_5": 0,
+    "m4_pass": false,
+    "n": 12
+  },
+  "results": [
+    {
+      "query": "SSE chat streaming response handler OpenAI compatible",
+      "expected": [
+        "sse/handlers/chat.js",
+        "open-sse/handlers/chatCore",
+        "chatCore/streamingHandler.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 2334,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 7aa1172053224e78b284c178ce4635b3)"
+    },
+    {
+      "query": "OIDC authentication token validation session login",
+      "expected": [
+        "lib/auth/oidc.js",
+        "lib/auth/googleOidc.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 710,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: fdd9f73b3a1a4c839af58d8b5e558aba)"
+    },
+    {
+      "query": "credit ledger deduct balance transaction record",
+      "expected": [
+        "creditLedgerRepo.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 707,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 0b0d1fb0272f47b7b481628231e57b34)"
+    },
+    {
+      "query": "usage tracking API request metrics logging",
+      "expected": [
+        "usageRepo.js",
+        "usageDb.js",
+        "requestDetailsDb.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 724,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: d4316689da4c48458ad629118db88d02)"
+    },
+    {
+      "query": "MITM proxy SSL certificate intercept server",
+      "expected": [
+        "mitm/server.js",
+        "mitm/cert/generate.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 1047,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 3f733b73b5ac4b4c80ce0d0d2f49084c)"
+    },
+    {
+      "query": "API key validation bearer authentication lookup",
+      "expected": [
+        "apiKeysRepo.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 697,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 51c6a135f9a846fdb9fa35d6771f0fb9)"
+    },
+    {
+      "query": "search query handler results streaming response",
+      "expected": [
+        "sse/handlers/search.js",
+        "open-sse/handlers/search"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 766,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: d627dbd6beb142a8a923c7ffb6b80874)"
+    },
+    {
+      "query": "database migration schema initial table setup",
+      "expected": [
+        "001-initial.js",
+        "migrate.js",
+        "schema.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 833,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: d0fe0e8d96dc4807bb6f58377b4d0d93)"
+    },
+    {
+      "query": "check credits billing plan quota deduction",
+      "expected": [
+        "checkCredits.js",
+        "planQuota.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 709,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 19745fd5a23c49e486ee2be2bb13a634)"
+    },
+    {
+      "query": "connections model provider endpoint configuration",
+      "expected": [
+        "connectionsRepo.js",
+        "connections"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 655,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 0d9106315b194622892116a3797cf449)"
+    },
+    {
+      "query": "image generation handler request stream diffusion",
+      "expected": [
+        "imageGeneration.js",
+        "imageGenerationCore.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 715,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 9d31378ed0994c3e9786dcb1e36bb3f7)"
+    },
+    {
+      "query": "login rate limiter brute force protection attempts",
+      "expected": [
+        "loginLimiter.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 694,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 6a4f09541fc34ac099e66e3a6edcfd93)"
+    }
+  ]
+}

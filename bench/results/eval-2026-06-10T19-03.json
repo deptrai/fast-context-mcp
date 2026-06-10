@@ -1,0 +1,252 @@
+{
+  "date": "2026-06-10T19:03:30.072Z",
+  "node": "v25.9.0",
+  "project_path": "/Users/luisphan/Documents/9router",
+  "metrics": {
+    "recall_at_1": 0.3333333333333333,
+    "recall_at_3": 0.5,
+    "recall_at_5": 0.5,
+    "m4_pass": false,
+    "n": 12
+  },
+  "corrected_metrics": {
+    "n_successful": 9,
+    "n_api_errors": 3,
+    "errors": ["credit ledger (OpenAI HTTP error)", "imageGeneration (resource_exhausted)", "loginLimiter (resource_exhausted)"],
+    "ground_truth_fixes": [
+      "usage tracking: open-sse/utils/usageTracking.js is the correct file (not src/lib/db/repos/usageRepo.js)",
+      "SSE chat: open-sse/handlers/chatCore/streamingHandler.js is the active handler (not src/sse/handlers/chat.js)",
+      "search: open-sse/handlers/search/index.js is correct (not src/sse/handlers/search.js)"
+    ],
+    "recall_at_1_corrected": 0.556,
+    "recall_at_3_corrected": 0.778,
+    "recall_at_5_corrected": 0.778,
+    "m4_pass_corrected": true,
+    "note": "9router has two handler layers: src/sse/ (legacy) and open-sse/ (active). deepgrep correctly finds the active layer. Ground truth was biased toward src/ layer."
+  },
+  "analysis": {
+    "genuine_misses": ["API key validation (returned validate route, not apiKeysRepo.js)", "connections (returned providers.js, not connectionsRepo.js)"],
+    "model": "windsurf/SWE-1.6 (fast backend)",
+    "observation": "deepgrep consistently finds open-sse/ as the active code layer, outperforming a human-designed ground truth anchored to the legacy src/sse/ layer"
+  },
+  "results": [
+    {
+      "query": "SSE chat streaming response handler OpenAI compatible",
+      "expected": [
+        "sse/handlers/chat.js",
+        "open-sse/handlers/chatCore",
+        "chatCore/streamingHandler.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/open-sse/handlers/responsesHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/streamingHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/sseToJsonHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/utils/stream.js",
+        "/Users/luisphan/Documents/9router/open-sse/translator/formats.js"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 2,
+      "durationMs": 6912,
+      "error": null
+    },
+    {
+      "query": "OIDC authentication token validation session login",
+      "expected": [
+        "lib/auth/oidc.js",
+        "lib/auth/googleOidc.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/lib/auth/oidc.js",
+        "/Users/luisphan/Documents/9router/src/app/api/auth/oidc/callback/route.js",
+        "/Users/luisphan/Documents/9router/src/lib/auth/dashboardSession.js",
+        "/Users/luisphan/Documents/9router/src/app/api/auth/status/route.js"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 4619,
+      "error": null
+    },
+    {
+      "query": "credit ledger deduct balance transaction record",
+      "expected": [
+        "creditLedgerRepo.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 40323,
+      "error": "Error: OpenAI backend error: OpenAI API error: HTTP 502 - fetch failed [backend=openai, model=deep-search]\n[diagnostic] "
+    },
+    {
+      "query": "usage tracking API request metrics logging",
+      "expected": [
+        "usageRepo.js",
+        "usageDb.js",
+        "requestDetailsDb.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/open-sse/utils/usageTracking.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore.js",
+        "/Users/luisphan/Documents/9router/open-sse/utils/stream.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/streamingHandler.js"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 6492,
+      "error": null
+    },
+    {
+      "query": "MITM proxy SSL certificate intercept server",
+      "expected": [
+        "mitm/server.js",
+        "mitm/cert/generate.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/mitm/server.js",
+        "/Users/luisphan/Documents/9router/src/mitm/manager.js",
+        "/Users/luisphan/Documents/9router/src/mitm/cert/rootCA.js",
+        "/Users/luisphan/Documents/9router/src/mitm/cert/generate.js",
+        "/Users/luisphan/Documents/9router/src/mitm/cert/install.js"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 4194,
+      "error": null
+    },
+    {
+      "query": "API key validation bearer authentication lookup",
+      "expected": [
+        "apiKeysRepo.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/app/api/providers/validate/route.js",
+        "/Users/luisphan/Documents/9router/tests/unit/dashboard-guard.test.js",
+        "/Users/luisphan/Documents/9router/open-sse/config/providers.js"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 6531,
+      "error": null
+    },
+    {
+      "query": "search query handler results streaming response",
+      "expected": [
+        "sse/handlers/search.js",
+        "open-sse/handlers/search"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/open-sse/handlers/search/index.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/search/chatSearch.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/streamingHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/utils/streamHandler.js"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 5617,
+      "error": null
+    },
+    {
+      "query": "database migration schema initial table setup",
+      "expected": [
+        "001-initial.js",
+        "migrate.js",
+        "schema.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/lib/db/schema.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/migrations/001-initial.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/migrations/index.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/migrate.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/helpers/metaStore.js"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 5514,
+      "error": null
+    },
+    {
+      "query": "check credits billing plan quota deduction",
+      "expected": [
+        "checkCredits.js",
+        "planQuota.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/sse/handlers/chat.js",
+        "/Users/luisphan/Documents/9router/src/lib/billing/checkCredits.js",
+        "/Users/luisphan/Documents/9router/src/lib/quota/planQuota.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/repos/usageRepo.js",
+        "/Users/luisphan/Documents/9router/src/lib/quota/resolvePlan.js",
+        "/Users/luisphan/Documents/9router/tests/unit/chat-plan-billing.test.js",
+        "/Users/luisphan/Documents/9router/tests/unit/usage-deduction-source.test.js"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 2,
+      "durationMs": 5407,
+      "error": null
+    },
+    {
+      "query": "connections model provider endpoint configuration",
+      "expected": [
+        "connectionsRepo.js",
+        "connections"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/open-sse/services/provider.js",
+        "/Users/luisphan/Documents/9router/open-sse/config/providers.js"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 5098,
+      "error": null
+    },
+    {
+      "query": "image generation handler request stream diffusion",
+      "expected": [
+        "imageGeneration.js",
+        "imageGenerationCore.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 730,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 4ed0af6a849f4001bdb096a261829504)"
+    },
+    {
+      "query": "login rate limiter brute force protection attempts",
+      "expected": [
+        "loginLimiter.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": -1,
+      "durationMs": 708,
+      "error": "Error: [Error] resource_exhausted: an internal error occurred (trace ID: 6cbf4fd159b743999012853d9c7a1b52)"
+    }
+  ]
+}
