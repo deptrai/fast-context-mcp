@@ -92,6 +92,15 @@ deepgrep v1.0 đã ship: MCP server semantic code search với 2 mode (fast SWE-
 - WHEN deep-mode trả results đã được LLM order, THE system SHALL chỉ rerank khi multi-file results hoặc explicit `rerank=true` — default trust LLM order.
 - THE ranking logic SHALL nằm trong pure module `src/rank.mjs` (testable in isolation).
 
+### 🔲 FR13 — Cross-repo search (`project_paths`, v1.5)
+- THE system SHALL chấp nhận `project_paths: string[]` thay cho `project_path: string`
+- WHEN nhiều paths được truyền vào, THE system SHALL search parallel trên tất cả paths và merge kết quả
+- THE merged results SHALL được dedup theo `full_path` (absolute path duy nhất)
+- WHEN một path fail (không tồn tại / timeout), THE system SHALL tiếp tục với các paths còn lại + log warning
+- THE output contract SHALL thêm `meta.project_paths[]` liệt kê paths đã search
+- THE existing `project_path` (singular) SHALL vẫn hoạt động (backward compat)
+- **Zero-index:** Không cần build step, không cần API key bổ sung, tái dụng backends đang có
+
 ### 🔒 FR12 (gated, v2.0) — Optional indexed tier
 - IF gate ADR-10 passes (≥2/4 conditions trong §9), THEN THE system MAY cung cấp opt-in local index `.deepgrep/` qua command `deepgrep index`.
 - THE indexed mode SHALL trả cùng output contract như zero-index (hidden backend).

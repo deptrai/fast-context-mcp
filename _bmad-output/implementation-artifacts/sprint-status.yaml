@@ -1,7 +1,7 @@
 # Sprint Status — deepgrep v1.1 / v1.2
 # STATUS: backlog | ready-for-dev | in-progress | review | done | wont-do | gated
 
-last_updated: 2026-06-11 (Story 4.2 done)
+last_updated: 2026-06-11 (Sprint Change Proposal — Roadmap Correction Post Epic 4)
 project_name: deepgrep
 
 development_status:
@@ -33,6 +33,12 @@ development_status:
   4-stable-output-contract: done  # Story 4.1: JSON contract (contract.mjs) — do FIRST
   4-ranking-dedup: done                   # Story 4.3: rank.mjs + dedup — do SECOND
   4-context-pack: done                   # Story 4.2: deepgrep_pack + roles.mjs — do LAST
+
+  # ── v1.5 (backlog) — Cross-repo + Distribution ──────────────
+  # Epic 6: Multi-repo zero-index context engine
+  # Parallel search trên N project_paths — không cần indexing
+  6-cross-repo-search: backlog          # Story 6.1: project_paths[] parallel search
+  6-distribution: backlog               # Story 6.2: binary build + integration recipes
 
   # ── v2.0 (gated) — Optional Indexed Tier ─────────────────
   # Epic 5: NORTH STAR. Augment-style persistent context, local-first.

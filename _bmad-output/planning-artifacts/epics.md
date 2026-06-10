@@ -245,6 +245,11 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
 
 ## Epic 5: Tầng Đánh Chỉ mục Tùy chọn (v2.0) — 🔒 Có cổng kiểm soát / Khát vọng
 
+> **Cập nhật 2026-06-11:** Cross-repo zero-index (`project_paths` parallel search) đã được tách ra
+> thành **Epic 6 (v1.5)** — không cần indexing. Epic 5 tập trung hoàn toàn vào local indexed tier
+> cho repos quá lớn để zero-index hiệu quả. Gate conditions 2+3 xác nhận nhưng Condition 2
+> (multi-repo) sẽ được giải quyết ở Epic 6 trước mà không cần indexed tier.
+
 > NORTH STAR, KHÔNG PHẢI BACKLOG. Một context engine thường trú kiểu Augment, nhưng local-first và opt-in. KHÔNG bắt đầu cho đến khi cổng kiểm soát được mở. Xem prd.md §9 North Star.
 
 **Cổng kiểm soát (≥2 điều phải đo được là đúng trước khi mở):**
@@ -276,6 +281,47 @@ tôi muốn việc lắp ráp ngữ cảnh trải rộng nhiều repo local,
 
 **Trạng thái:** Placeholder. Chỉ định nghĩa nếu nhu cầu multi-repo là thật lúc mở cổng.
 
+## Epic 6: Phân phối & Cross-repo (v1.5)
+
+> Mở rộng deepgrep từ single-repo → multi-repo context engine. Zero-index, không cần build step,
+> không cần indexing. Giải quyết Condition 2 (multi-repo need) của Epic 5 gate theo cách nhẹ hơn.
+
+**Ràng buộc kiến trúc:** ADR-11 (cross-repo parallel search, no state). Tái dụng `rankResults` từ
+`rank.mjs` để dedup + merge kết quả. Backward compat với `project_path` (singular).
+
+### Story 6.1: Cross-repo search (`project_paths`)  [làm ĐẦU TIÊN]
+
+Với tư cách lập trình viên làm việc trên nhiều repo liên quan,
+tôi muốn search song song trên nhiều project paths,
+để agent có context từ cả monorepo lẫn các micro-repo liên quan mà không cần setup index.
+
+**Tiêu chí Chấp nhận:**
+- **Cho** `project_paths: string[]` được truyền, **Thì** search chạy parallel trên tất cả paths, kết quả merge + dedup theo `full_path`
+- **Cho** `project_path` (singular) vẫn được truyền, **Thì** hành vi cũ được giữ nguyên (backward compat)
+- **Cho** một path fail, **Thì** path đó bị bỏ qua với warning; các path khác vẫn chạy
+- **Cho** JSON output, **Thì** `meta.project_paths[]` liệt kê tất cả paths đã search
+- **Không cần** API key bổ sung; dùng cùng backends đang có
+
+**Ghi chú kỹ thuật:**
+- `Promise.all()` parallel search trên N paths, tái dụng `rankResults` để dedup
+- `max_results_per_path` optional param (default=10) để tránh tree size bùng nổ
+- Pure zero-index — không state, không index
+
+### Story 6.2: Distribution (CLI binary + integration recipes)  [làm THỨ HAI]
+
+Với tư cách developer muốn dùng deepgrep không cần npx,
+tôi muốn binary đơn standalone cho macOS/Linux/Windows,
+để setup là `./deepgrep` thay vì `npx deepgrep`.
+
+**Tiêu chí Chấp nhận:**
+- **Cho** `npm run build:binary`, **Thì** tạo binary standalone chạy không cần Node.js
+- **Cho** binary, **Thì** ripgrep và các dependencies được bundle đúng
+- **Cho** README, **Thì** có integration recipes cho Claude Code, Cursor, Kiro, Continue.dev
+
+**Ghi chú:** Re-attempt của Story 2.2 (defer do Bun compile issues với `@vscode/ripgrep`). Cần investigate alternative bundlers hoặc ship ripgrep separately.
+
+---
+
 ## Tóm tắt Roadmap (cập nhật 2026-06-08)
 
 | Phiên bản | Chủ đề | Trạng thái |
@@ -283,5 +329,5 @@ tôi muốn việc lắp ráp ngữ cảnh trải rộng nhiều repo local,
 | v1.1 | Trí tuệ Lõi + Trải nghiệm Lập trình viên (Epic 1-2) | ✅ Xong |
 | v1.2 | Truy xuất Tiết kiệm Token — `deepgrep_get` (Epic 3) | ✅ 3.1 đã xong, 3.2 wont-do |
 | v1.3 | Context Engine Di động (Epic 4) | 🔲 Backlog |
-| v1.5 | Phân phối: CLI parity, binary đơn, công thức tích hợp | 🔲 Tương lai |
+| v1.5 | Cross-repo zero-index + Phân phối (Epic 6) | 🔲 Backlog |
 | v2.0 | Tầng Đánh Chỉ mục Tùy chọn (Epic 5) | 🔒 Có cổng / khát vọng |

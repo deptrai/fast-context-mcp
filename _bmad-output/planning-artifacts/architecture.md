@@ -154,6 +154,21 @@ openai-backend.mjs (friendlyError layer)
 
 **Trade-off:** a 5th tool grows the surface agents must learn. Accepted because pack's job (budgeted multi-file assembly + roles) is genuinely distinct from `deepgrep_get`'s job (verbatim range read). If it were merely "get with labels" it would be a param, not a tool — the budget+ranking+role composition justifies the separation.
 
+### ADR-11 (v1.5): Cross-repo parallel search — no state, reuse rankResults
+
+**Decision:** `project_paths: string[]` triggers `Promise.all()` parallel search across N paths.
+Results merged via `rankResults` dedup logic. No index, no session state.
+Single `project_path` remains unchanged (backward compat — existing clients unaffected).
+
+**Tree size risk:** Each path generates independent repo map; N paths × tree_size can exceed context.
+Mitigation: `max_results_per_path` optional param (default=10) caps per-repo results before merge.
+
+**Binding constraints:**
+- Reuse `rankResults` from `rank.mjs` for cross-repo dedup (same `full_path` uniqueness guarantee)
+- Partial failure: one path failing must not fail the entire request
+- `meta.project_paths[]` in JSON output contract (ADR-8 extension)
+- Zero new dependencies; parallel execution via native `Promise.all()`
+
 ### ADR-10 (v2.0, gated): Indexed tier needs a lifecycle ADR before any code
 
 **Context:** Epic 5 is not "add an index" — it introduces filesystem-level state where today there is none. This ADR is a placeholder reminder, NOT a decision.
@@ -210,6 +225,8 @@ query → shouldEscalate(query)?
 | 2.2 Single binary | package.json, .github/workflows |
 | 3.1 deepgrep_get (v1.2) | server.mjs (tool mới), snippets.mjs (tái dụng, no change) |
 | 3.2 Warm cache (v1.2, defer) | server.mjs (tool mới), cache.mjs, shared.mjs (getRepoMap) |
+| 6.1 Cross-repo search (v1.5) | server.mjs (update schema deepgrep_search + deepgrep_deep), rank.mjs (reuse dedup) |
+| 6.2 Distribution (v1.5) | package.json, build scripts, README |
 
 ## 8. Risks
 
