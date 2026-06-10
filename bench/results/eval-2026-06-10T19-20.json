@@ -1,0 +1,236 @@
+{
+  "date": "2026-06-10T19:20:35.108Z",
+  "node": "v25.9.0",
+  "project_path": "/Users/luisphan/Documents/chainlens",
+  "metrics": {
+    "recall_at_1": 0.5833333333333334,
+    "recall_at_3": 0.9166666666666666,
+    "recall_at_5": 0.9166666666666666,
+    "m4_pass": true,
+    "n": 12
+  },
+  "results": [
+    {
+      "query": "workflow orchestration service run execute",
+      "expected": [
+        "workflows/service.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/routes.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/service.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/dispatcher.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/repository.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/index.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/presentation-builder-service.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/data-analysis-service.ts",
+        "/Users/luisphan/Documents/chainlens/packages/db/src/schema/epsilon.ts",
+        "/Users/luisphan/Documents/chainlens/packages/db/src/schema/index.ts"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 2,
+      "durationMs": 48787,
+      "error": null
+    },
+    {
+      "query": "Epsilon agent ticket lifecycle task management",
+      "expected": [
+        "ticket-service.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/src/services/ticket-service.ts",
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/src/services/ticket-triggers.ts",
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/src/services/project-v2-seed.ts",
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/src/services/ticket-tools.ts"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 9318,
+      "error": null
+    },
+    {
+      "query": "Drizzle database schema Epsilon tables columns",
+      "expected": [
+        "schema/epsilon.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/packages/db/src/schema/epsilon.ts",
+        "/Users/luisphan/Documents/chainlens/packages/db/src/index.ts"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 8672,
+      "error": null
+    },
+    {
+      "query": "session chat messages UI component React",
+      "expected": [
+        "session-chat.tsx"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/session/session-chat.tsx",
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/session/session-chat-input.tsx"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 8149,
+      "error": null
+    },
+    {
+      "query": "tool renderer output display component",
+      "expected": [
+        "tool-renderers.tsx"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/thread/tool-views/utils.ts",
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/thread/tool-views/tool-result-parser.ts",
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/session/tool-renderers.tsx"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 3,
+      "durationMs": 8036,
+      "error": null
+    },
+    {
+      "query": "workflow types shared interface definition",
+      "expected": [
+        "types/workflow.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/packages/shared/src/types/workflow.ts",
+        "/Users/luisphan/Documents/chainlens/packages/shared/src/index.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/repository.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/service.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/routes.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/catalog-seed.ts",
+        "/Users/luisphan/Documents/chainlens/apps/web/src/types/workflow-ux.ts",
+        "/Users/luisphan/Documents/chainlens/packages/db/src/types.ts",
+        "/Users/luisphan/Documents/chainlens/packages/shared/src/__tests__/workflow.test.ts"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 47699,
+      "error": null
+    },
+    {
+      "query": "service manager lifecycle register initialize",
+      "expected": [
+        "service-manager.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/src/services/service-manager.ts",
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/tests/unit/service-manager.test.ts",
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/src/index.ts",
+        "/Users/luisphan/Documents/chainlens/core/epsilon-master/src/routes/services.ts"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 9439,
+      "error": null
+    },
+    {
+      "query": "admin API routes management handlers",
+      "expected": [
+        "admin/index.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/apps/api/src/routes.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/index.ts"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 7678,
+      "error": null
+    },
+    {
+      "query": "canvas renderer file visualization drawing",
+      "expected": [
+        "canvas-renderer.tsx"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/file-renderers/canvas-renderer.tsx",
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/thread/tool-views/canvas-tool/CanvasToolView.tsx",
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/thread/tool-views/canvas-tool/_utils.ts"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 8729,
+      "error": null
+    },
+    {
+      "query": "tool display names icons metadata labels",
+      "expected": [
+        "display-names.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/packages/shared/src/tools/formatter.ts",
+        "/Users/luisphan/Documents/chainlens/packages/shared/src/tools/display-names.ts",
+        "/Users/luisphan/Documents/chainlens/packages/shared/src/tools/icon-keys.ts",
+        "/Users/luisphan/Documents/chainlens/apps/web/src/components/thread/tool-views/utils.ts"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 2,
+      "durationMs": 8725,
+      "error": null
+    },
+    {
+      "query": "chainlens proxy server middleware request",
+      "expected": [
+        "chainlens-proxy/src/index.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/apps/chainlens-proxy/src/index.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/router/services/llm.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/config.ts"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 7750,
+      "error": null
+    },
+    {
+      "query": "workflow HTTP endpoint routes API handlers",
+      "expected": [
+        "workflows/routes.ts",
+        "workflows/service.ts"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/chainlens/apps/api/src/index.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/index.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/routes.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/service.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/dispatcher.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/workflows/repository.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/middleware/auth.ts",
+        "/Users/luisphan/Documents/chainlens/apps/api/src/sessions/routes.ts"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 3,
+      "durationMs": 43371,
+      "error": null
+    }
+  ]
+}

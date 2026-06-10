@@ -1,0 +1,14 @@
+[
+  {"q": "workflow orchestration service run execute",           "e": ["workflows/service.ts"]},
+  {"q": "Epsilon agent ticket lifecycle task management",       "e": ["ticket-service.ts"]},
+  {"q": "Drizzle database schema Epsilon tables columns",       "e": ["schema/epsilon.ts"]},
+  {"q": "session chat messages UI component React",             "e": ["session-chat.tsx"]},
+  {"q": "tool renderer output display component",               "e": ["tool-renderers.tsx"]},
+  {"q": "workflow types shared interface definition",           "e": ["types/workflow.ts"]},
+  {"q": "service manager lifecycle register initialize",        "e": ["service-manager.ts"]},
+  {"q": "admin API routes management handlers",                 "e": ["admin/index.ts"]},
+  {"q": "canvas renderer file visualization drawing",           "e": ["canvas-renderer.tsx"]},
+  {"q": "tool display names icons metadata labels",             "e": ["display-names.ts"]},
+  {"q": "chainlens proxy server middleware request",            "e": ["chainlens-proxy/src/index.ts"]},
+  {"q": "workflow HTTP endpoint routes API handlers",           "e": ["workflows/routes.ts", "workflows/service.ts"]}
+]

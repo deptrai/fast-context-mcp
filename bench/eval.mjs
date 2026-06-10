@@ -58,8 +58,10 @@ if (!process.env.DEEPGREP_API_KEY) {
 const _args        = process.argv.slice(2);
 const _projectIdx  = _args.indexOf("--project");
 const _queriesIdx  = _args.indexOf("--queries");
+const _depthIdx    = _args.indexOf("--tree-depth");
 if (_projectIdx !== -1 && _args[_projectIdx + 1]) PROJECT_PATH = _args[_projectIdx + 1];
 const _queriesFile = _queriesIdx !== -1 ? _args[_queriesIdx + 1] : null;
+const TREE_DEPTH   = _depthIdx  !== -1 ? parseInt(_args[_depthIdx + 1], 10) : 3;
 
 // ─── MCP client (same stdio pattern as mcp-integration.test.mjs) ──
 
@@ -167,7 +169,7 @@ async function main() {
     try {
       const res = await client.request(id++, "tools/call", {
         name: "deepgrep_search",
-        arguments: { query: q, project_path: PROJECT_PATH, max_results: 10, tree_depth: 3 },
+        arguments: { query: q, project_path: PROJECT_PATH, max_results: 10, tree_depth: TREE_DEPTH },
       });
       const text = res.result?.content?.[0]?.text || "";
       const isApiError = text.startsWith("Error:") || text.includes("resource_exhausted") ||
