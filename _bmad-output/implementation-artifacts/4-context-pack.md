@@ -332,6 +332,13 @@ test/
 - Schema object: flat parameter structure, avoid nested objects
 - Handler: async function, return `{content: [{type: "text", text}]}`
 
+### Review Findings
+
+- [x] [Review][Patch] `.env` pattern causes false positives — `p.includes(".env")` matches `envHelper.mjs`, `environment.ts` etc.; fix: use `/(^|\/)\..env(\.|$)/.test(p)` or `p.endsWith("/.env")` [deepgrep/src/roles.mjs:10]
+- [x] [Review][Patch] `files` param declared `z.optional()` in schema but handler rejects absent input — inconsistency; fix: change to `z.array(...).min(1)` (required) [deepgrep/src/server.mjs:563]
+- [x] [Review][Patch] `calculateMatchDensity` exported but never called by `packContext` — match density path is dead code in practice; fix: either compute+pass matchDensity per file, or document as reserved API [deepgrep/src/pack.mjs:57]
+- [x] [Review][Defer] Files with empty `ranges: []` silently skipped, not counted in dropped [deepgrep/src/pack.mjs:~65] — deferred, pre-existing readSnippets behavior not introduced by this story
+
 ## Dev Agent Record
 
 ### Agent Model Used

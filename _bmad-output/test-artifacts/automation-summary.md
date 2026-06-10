@@ -1,7 +1,7 @@
 ---
-stepsCompleted: ['step-01-preflight-and-context', 'step-02-identify-targets', 'step-03-generate-tests', 'step-03c-aggregate', 'step-04-validate-and-summarize', 'step-05-snippets-tool-coverage']
-lastStep: 'step-05-snippets-tool-coverage'
-lastSaved: '2026-06-08'
+stepsCompleted: ['step-01-preflight-and-context', 'step-02-identify-targets', 'step-03-generate-tests', 'step-03c-aggregate', 'step-04-validate-and-summarize', 'step-05-snippets-tool-coverage', 'run2-coverage-gaps-2026-06-11']
+lastStep: 'run2-coverage-gaps-2026-06-11'
+lastSaved: '2026-06-11'
 inputDocuments:
   - deepgrep/src/executor.mjs
   - deepgrep/src/health.mjs
@@ -9,6 +9,10 @@ inputDocuments:
   - deepgrep/src/backends/windsurf.mjs
   - deepgrep/src/backends/openai.mjs
   - deepgrep/src/core.mjs
+  - deepgrep/src/roles.mjs
+  - deepgrep/src/pack.mjs
+  - deepgrep/src/contract.mjs
+  - deepgrep/src/rank.mjs
   - _bmad/tea/config.yaml
 ---
 
@@ -96,3 +100,54 @@ All targets are **Unit level** (pure logic + filesystem temp dirs, no network).
 1. **`test-review`** — review quality of the new test suite
 2. **`trace`** — build traceability matrix (requirements → tests)
 3. **`ci`** — wire `test:ci` into GitHub Actions (publish.yml already exists)
+
+---
+
+## Run 2 (2026-06-11): Coverage Gap Fill — Epic 4 New Modules
+
+### Context
+
+Story 4.2 (deepgrep_pack) added `roles.mjs`, `pack.mjs` and extended `contract.mjs`. This run filled targeted coverage gaps identified by static branch analysis.
+
+### Coverage Gaps Addressed
+
+| Module | Gap | Severity |
+|--------|-----|----------|
+| roles.mjs | `.env` config pattern | Low |
+| roles.mjs | `matchDensity=0.1` exact boundary | Low |
+| roles.mjs | Multi-word query in calculateMatchDensity | Low |
+| pack.mjs | `max_lines` advisory-only (not enforced) | Medium |
+| pack.mjs | Nonexistent file path → graceful skip | Medium |
+| pack.mjs | `max_chars=0` → all dropped | Medium |
+| contract.mjs | Mode auto-detect (backend=openai, no opts.mode) | Medium |
+| contract.mjs | Empty-snippets-with-drops text path | Medium |
+| contract.mjs | Single-segment path in snippet JSON | Low |
+| contract.mjs | Empty Map in JSON mode → textOutput fallback | Low |
+| rank.mjs | `.spec.` rerank pattern | Low |
+| rank.mjs | Files without full_path → undefined key dedup | Low |
+| rank.mjs | Missing ranges property → empty ranges | Low |
+
+### New Test File
+
+- `test/coverage-gaps.test.mjs` — 14 targeted gap-fill tests
+
+### Validation
+
+| Check | Status |
+|-------|--------|
+| Gap tests pass | ✅ 14/14 |
+| Full regression suite | ✅ 346/346 |
+| Zero regressions | ✅ |
+
+### Final Coverage
+
+| Module | Run 1 | Run 2 |
+|--------|-------|-------|
+| executor.mjs | ✅ 44 tests | unchanged |
+| health.mjs | ✅ 22 tests | unchanged |
+| backends | ✅ 5 tests | unchanged |
+| roles.mjs | ✅ 28 tests | +3 gaps |
+| pack.mjs | ✅ 14 tests | +3 gaps |
+| contract.mjs | ✅ covered | +4 gaps |
+| rank.mjs | ✅ covered | +3 gaps |
+| **Total suite** | **332** | **346 (+14)** |
