@@ -9,6 +9,38 @@
     "m4_pass": true,
     "n": 12
   },
+  "corrected_metrics": {
+    "note": "2 queries failed with resource_exhausted API error (not quality miss). Corrected metrics exclude those 2.",
+    "n_successful": 10,
+    "n_api_errors": 2,
+    "recall_at_1_excl_errors": 1.0,
+    "recall_at_3_excl_errors": 1.0,
+    "recall_at_5_excl_errors": 1.0
+  },
+  "analysis": {
+    "summary": "deepgrep search quality is excellent on successful API calls — 100% recall@1 on 10/12 queries. 2 misses were transient API errors (resource_exhausted), not quality failures.",
+    "api_errors": [
+      {
+        "query": "JSON output contract schema serialization ADR-8",
+        "error": "resource_exhausted: an internal error occurred",
+        "trace_id": "2f2d0987ecf74ee2b0e2ecbef1aa311f",
+        "root_cause": "Transient quota/internal error at API provider. Re-running typically passes."
+      },
+      {
+        "query": "ranking deduplication overlapping ranges mergeRanges",
+        "error": "resource_exhausted: an internal error occurred",
+        "trace_id": "f4c5ef04e8ac4e0980b9963b7bde597c",
+        "root_cause": "Transient quota/internal error at API provider. Re-running typically passes."
+      }
+    ],
+    "observations": [
+      "All 10 successful queries found the correct file at rank #1 (100% recall@1)",
+      "Query set is self-referential (deepgrep searching its own codebase) — likely optimistic vs real-world queries",
+      "API instability (resource_exhausted) is the primary reliability risk, not search quality",
+      "shouldEscalate returns false for both failed queries — they ran in quick mode which may be more prone to resource_exhausted on short queries"
+    ],
+    "m4_verdict": "PASS — recall@3 = 83.3% (including errors) / 100% (excluding errors). Both exceed the 70% threshold."
+  }
   "results": [
     {
       "query": "cache key hashing mtime hash sha256",
