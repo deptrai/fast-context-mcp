@@ -4,7 +4,7 @@ inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "deepgrep/ROADMAP-v1.1.md"
   - "_bmad-output/planning-artifacts/research-deepgrep-v1.2.md"
-lastUpdated: 2026-06-07
+lastUpdated: 2026-06-10
 ---
 
 # deepgrep v1.1 — Phân rã Epic
@@ -198,7 +198,7 @@ tôi muốn làm nóng (pre-warm) cache search cho các truy vấn phổ biến,
 
 **Chủ đề:** Lắp ráp ngữ cảnh code theo từng tác vụ dưới một budget token rõ ràng — mà không cần đánh chỉ mục.
 
-**Ràng buộc kiến trúc:** ADR-8 (một module contract duy nhất), ADR-9 (pack = orchestrator mỏng, 4 ràng buộc bắt buộc), ADR-10 (tương thích tiến cho tầng đánh chỉ mục). Xem architecture.md.
+**Ràng buộc kiến trúc:** ADR-8 (một module contract duy nhất), ADR-9 (pack = orchestrator mỏng, 4 ràng buộc), ADR-10 (tương thích tiến cho tầng đánh chỉ mục). Xem architecture.md.
 
 **Thứ tự thực thi (do phụ thuộc dẫn dắt):** 4.1 → 4.3 → 4.2. Contract trước (4.1), rồi ranking/roles tạo ra các trường có cấu trúc (4.3), rồi pack lắp ráp đầu vào đã xếp hạng+gán nhãn dưới budget (4.2). Xây pack trước ranking sẽ buộc phải ranking inline, mâu thuẫn với 4.3.
 
@@ -224,7 +224,7 @@ tôi muốn kết quả được sắp theo độ hữu ích với bản trùng 
 **Tiêu chí Chấp nhận:**
 - **Cho** nhiều kết quả, **Thì** các đường dẫn file trùng được gộp; các range chồng lấn trong cùng file được gộp
 - **Cho** truy vấn không hỏi về test, **Thì** ưu tiên source hơn test/docs (heuristic theo path: `/test/`, `.test.`, `__tests__/`)
-- **Cho** kết quả chế độ deep (LLM đã sắp xếp rồi), **Thì** rerank chỉ áp dụng cho kết quả nhiều file hoặc khi `rerank=true` rõ ràng — mặc định tin tưởng thứ tự của LLM
+- **Cho** kết quả chế độ deep (LLM đã sắp xếp rồi), **Thì** rerank chỉ áp dụng cho kết quả gồm nhiều file hoặc khi `rerank=true` rõ ràng — mặc định tin tưởng thứ tự của LLM
 - **Cho** logic ranking, **Thì** nằm trong module thuần `src/rank.mjs` (test được độc lập, không gắn chặt với tool-handler)
 
 ### Story 4.2: Context Pack (`deepgrep_pack`)  [làm CUỐI CÙNG]
@@ -235,8 +235,8 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
 
 **Tiêu chí Chấp nhận (ràng buộc bởi ADR-9):**
 - **Cho** một truy vấn (hoặc files/ranges từ search trước), **Khi** gọi `deepgrep_pack`, **Thì** trả về các snippet hàng đầu nhóm theo vai trò + đã sắp xếp (qua `src/rank.mjs`), trong giới hạn budget
-- **Cho** budget `max_chars` (bắt buộc) và `max_lines` tùy chọn (gợi ý), **Thì** output không bao giờ vượt `max_chars`; các snippet bị loại được báo cáo rõ ràng
-- **Cho** files/ranges được cung cấp trực tiếp, **Thì** thuần local — không cần API key (kế thừa thế stateless của ADR-6)
+- **Cho** budget `max_chars` (được áp dụng bắt buộc) và `max_lines` tùy chọn (gợi ý), **Thì** output không bao giờ vượt `max_chars`; các snippet bị loại được báo cáo rõ ràng
+- **Cho** files/ranges được cung cấp trực tiếp, **Thì** thuần local — không cần API key (kế thừa tư thế stateless của ADR-6)
 - **Cho** mỗi snippet, **Thì** nhãn vai trò qua heuristic `src/roles.mjs` (implementation/caller/config/test/docs/type) — chỉ dựa trên path + tên file + mật độ match, KHÔNG dùng AST / language server
 - **Cho** phần implementation, **Thì** tái dụng `readSnippets` + `formatSnippetToolOutput` (Story 3.1), không bao giờ trùng lặp snippet I/O
 - **Cho** mỗi case heuristic vai trò, **Thì** đi kèm một test fixture (chặn việc heuristic phình to)
