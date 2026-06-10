@@ -99,10 +99,23 @@ tôi muốn một context pack đã lắp ráp gọn từ kết quả search,
     async ({query, files, max_chars, max_lines, rerank, output_format}) => { ... }
   )
   ```
-- [ ] Handler logic:
-  - Validate: `files` required (or derive from last search — TBD if session needed)
-  - Call `packContext({query, files, max_chars, max_lines, rerank})`
-  - Serialize via `contract.mjs#serializePackResult(packResult, output_format)`
+- [ ] Handler logic (complete — no `{ ... }` placeholder):
+  ```js
+  async ({query, files, max_chars, max_lines, rerank, output_format}) => {
+    if (!files || files.length === 0) {
+      return { content: [{ type: "text", text: "Error: files required" }] };
+    }
+    try {
+      const { packContext } = await import("./pack.mjs");
+      const { serializePackResult } = await import("./contract.mjs");
+      const packResult = await packContext({ query, files, max_chars, max_lines, rerank });
+      const text = serializePackResult(packResult, {}, output_format);
+      return { content: [{ type: "text", text }] };
+    } catch (e) {
+      return { content: [{ type: "text", text: `Error [pack]: ${e.message}` }] };
+    }
+  }
+  ```
 - [ ] Text format: group by role, markdown headers, budget report
 - [ ] JSON format: ADR-8 extension `{schema_version, snippets: [{role, path, ranges, content}], dropped, meta}`
 
