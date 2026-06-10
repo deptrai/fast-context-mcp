@@ -120,7 +120,8 @@ describe("serializeSnippetResult — AC6: JSON get output", () => {
     assert.equal(parsed.schema_version, "1.0");
     assert.equal(parsed.meta.retrieval, "lexical");
     assert.equal(parsed.meta.index_used, false);
-    assert.equal(parsed.files[0].path, "/p/a.mjs");
+    assert.equal(parsed.files[0].path, "p/a.mjs");        // short path (last-2 segments)
+    assert.equal(parsed.files[0].full_path, "/p/a.mjs"); // full_path unchanged
     assert.equal(parsed.files[0].content, "1 | line");
   });
 
