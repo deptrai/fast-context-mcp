@@ -23,7 +23,7 @@ import { fileURLToPath }                           from "node:url";
 const __dirname   = dirname(fileURLToPath(import.meta.url));
 const RESULTS_DIR = join(__dirname, "results");
 const SERVER_PATH = join(__dirname, "../deepgrep/src/server.mjs");
-const PROJECT_PATH = join(__dirname, "../deepgrep");
+let   PROJECT_PATH = join(__dirname, "../deepgrep");  // overridable via --project
 
 // ─── Load API keys from Claude Desktop config ─────────────
 
@@ -50,6 +50,16 @@ if (!process.env.DEEPGREP_API_KEY) {
   console.error("❌  DEEPGREP_API_KEY not set. Set via env or Claude Desktop config.");
   process.exit(1);
 }
+
+// ─── CLI arg overrides ────────────────────────────────────
+// --project /path/to/repo   override project to search
+// --queries /path/to.json   load custom query set from JSON
+
+const _args        = process.argv.slice(2);
+const _projectIdx  = _args.indexOf("--project");
+const _queriesIdx  = _args.indexOf("--queries");
+if (_projectIdx !== -1 && _args[_projectIdx + 1]) PROJECT_PATH = _args[_projectIdx + 1];
+const _queriesFile = _queriesIdx !== -1 ? _args[_queriesIdx + 1] : null;
 
 // ─── MCP client (same stdio pattern as mcp-integration.test.mjs) ──
 
@@ -106,7 +116,7 @@ class McpClient {
 // ─── Query set with ground truth ─────────────────────────
 
 // expect[0] = primary; expect[1+] = acceptable alternatives
-const QUERIES = [
+let QUERIES = [
   { q: "cache key hashing mtime hash sha256",                    e: ["cache.mjs"]           },
   { q: "role labeling heuristics path patterns implementation",  e: ["roles.mjs"]           },
   { q: "context pack budget enforcement max_chars dropped",      e: ["pack.mjs"]            },
@@ -120,6 +130,7 @@ const QUERIES = [
   { q: "openai backend retry 429 rate limit friendlyError",     e: ["openai-backend.mjs"]  },
   { q: "windsurf protobuf core search loop protocol",           e: ["core.mjs"]            },
 ];
+if (_queriesFile) QUERIES = JSON.parse(readFileSync(_queriesFile, "utf-8"));
 
 // ─── Helpers ──────────────────────────────────────────────
 
@@ -158,8 +169,15 @@ async function main() {
         name: "deepgrep_search",
         arguments: { query: q, project_path: PROJECT_PATH, max_results: 10, tree_depth: 3 },
       });
-      files = parseFiles(res.result?.content?.[0]?.text || "");
-      rank  = files.findIndex(f => e.some(x => f.includes(x))) + 1;
+      const text = res.result?.content?.[0]?.text || "";
+      const isApiError = text.startsWith("Error:") || text.includes("resource_exhausted") ||
+                         text.includes("internal error") || (text === "" && Date.now() - t0 < 2000);
+      if (isApiError) {
+        err = (text || "empty response <2s — likely resource_exhausted").slice(0, 120);
+      } else {
+        files = parseFiles(text);
+        rank  = files.findIndex(f => e.some(x => f.includes(x))) + 1;
+      }
     } catch (ex) { err = ex.message; }
 
     const sec  = ((Date.now() - t0) / 1000).toFixed(1) + "s";

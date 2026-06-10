@@ -1,0 +1,14 @@
+[
+  {"q": "SSE chat streaming response handler OpenAI compatible",     "e": ["sse/handlers/chat.js", "open-sse/handlers/chatCore", "chatCore/streamingHandler.js"]},
+  {"q": "OIDC authentication token validation session login",        "e": ["lib/auth/oidc.js", "lib/auth/googleOidc.js"]},
+  {"q": "credit ledger deduct balance transaction record",           "e": ["creditLedgerRepo.js"]},
+  {"q": "usage tracking API request metrics logging",                "e": ["usageRepo.js", "usageDb.js", "requestDetailsDb.js"]},
+  {"q": "MITM proxy SSL certificate intercept server",               "e": ["mitm/server.js", "mitm/cert/generate.js"]},
+  {"q": "API key validation bearer authentication lookup",           "e": ["apiKeysRepo.js"]},
+  {"q": "search query handler results streaming response",           "e": ["sse/handlers/search.js", "open-sse/handlers/search"]},
+  {"q": "database migration schema initial table setup",             "e": ["001-initial.js", "migrate.js", "schema.js"]},
+  {"q": "check credits billing plan quota deduction",                "e": ["checkCredits.js", "planQuota.js"]},
+  {"q": "connections model provider endpoint configuration",         "e": ["connectionsRepo.js", "connections"]},
+  {"q": "image generation handler request stream diffusion",         "e": ["imageGeneration.js", "imageGenerationCore.js"]},
+  {"q": "login rate limiter brute force protection attempts",        "e": ["loginLimiter.js"]}
+]

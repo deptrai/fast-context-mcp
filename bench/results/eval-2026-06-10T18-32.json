@@ -1,0 +1,231 @@
+{
+  "date": "2026-06-10T18:32:29.095Z",
+  "node": "v25.9.0",
+  "project_path": "/Users/luisphan/Documents/9router",
+  "metrics": {
+    "recall_at_1": 0.25,
+    "recall_at_3": 0.4166666666666667,
+    "recall_at_5": 0.5,
+    "m4_pass": false,
+    "n": 12
+  },
+  "results": [
+    {
+      "query": "SSE chat streaming response handler OpenAI compatible",
+      "expected": [
+        "sse/handlers/chat.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/streamingHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/responsesHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/utils/stream.js",
+        "/Users/luisphan/Documents/9router/open-sse/translator/formats.js",
+        "/Users/luisphan/Documents/9router/open-sse/translator/index.js"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 5989,
+      "error": null
+    },
+    {
+      "query": "OIDC authentication token validation session login",
+      "expected": [
+        "lib/auth/oidc.js",
+        "lib/auth/googleOidc.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/lib/auth/oidc.js",
+        "/Users/luisphan/Documents/9router/src/app/api/auth/oidc/callback/route.js",
+        "/Users/luisphan/Documents/9router/src/app/api/auth/oidc/start/route.js",
+        "/Users/luisphan/Documents/9router/src/app/api/auth/status/route.js"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 4812,
+      "error": null
+    },
+    {
+      "query": "credit ledger deduct balance transaction record",
+      "expected": [
+        "creditLedgerRepo.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/lib/db/repos/creditLedgerRepo.js",
+        "/Users/luisphan/Documents/9router/src/app/api/users/[id]/credits/route.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/repos/usageRepo.js",
+        "/Users/luisphan/Documents/9router/tests/unit/credit-ledger-callsites.test.js",
+        "/Users/luisphan/Documents/9router/tests/unit/credit-ledger-repo.test.js"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 4903,
+      "error": null
+    },
+    {
+      "query": "usage tracking API request metrics logging",
+      "expected": [
+        "usageRepo.js",
+        "usageDb.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/nonStreamingHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/streamingHandler.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/chatCore/requestDetail.js",
+        "/Users/luisphan/Documents/9router/open-sse/utils/usageTracking.js"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 4474,
+      "error": null
+    },
+    {
+      "query": "MITM proxy SSL certificate intercept server",
+      "expected": [
+        "mitm/server.js",
+        "mitm/cert/generate.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/mitm/server.js",
+        "/Users/luisphan/Documents/9router/src/mitm/manager.js",
+        "/Users/luisphan/Documents/9router/src/mitm/cert/generate.js",
+        "/Users/luisphan/Documents/9router/src/mitm/cert/rootCA.js",
+        "/Users/luisphan/Documents/9router/src/mitm/cert/install.js",
+        "/Users/luisphan/Documents/9router/src/mitm/config.js"
+      ],
+      "at1": 1,
+      "at3": 1,
+      "at5": 1,
+      "rank": 1,
+      "durationMs": 5392,
+      "error": null
+    },
+    {
+      "query": "API key validation bearer authentication lookup",
+      "expected": [
+        "apiKeysRepo.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/dashboardGuard.js",
+        "/Users/luisphan/Documents/9router/src/sse/services/auth.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/repos/apiKeysRepo.js",
+        "/Users/luisphan/Documents/9router/tests/unit/dashboard-guard.test.js"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 3,
+      "durationMs": 6134,
+      "error": null
+    },
+    {
+      "query": "search query handler results streaming response",
+      "expected": [
+        "sse/handlers/search.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/open-sse/handlers/search/index.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/search/chatSearch.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/search/callers.js",
+        "/Users/luisphan/Documents/9router/open-sse/handlers/search/normalizers.js"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 4750,
+      "error": null
+    },
+    {
+      "query": "database migration schema initial table setup",
+      "expected": [
+        "001-initial.js",
+        "migrate.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/lib/db/schema.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/migrate.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/migrations/index.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/migrations/001-initial.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/migrations/002-plans.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/driver.js"
+      ],
+      "at1": 0,
+      "at3": 1,
+      "at5": 1,
+      "rank": 2,
+      "durationMs": 4993,
+      "error": null
+    },
+    {
+      "query": "check credits billing plan quota deduction",
+      "expected": [
+        "checkCredits.js"
+      ],
+      "files": [
+        "/Users/luisphan/Documents/9router/src/sse/handlers/chat.js",
+        "/Users/luisphan/Documents/9router/src/lib/quota/planQuota.js",
+        "/Users/luisphan/Documents/9router/src/lib/quota/resolvePlan.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/repos/usageRepo.js",
+        "/Users/luisphan/Documents/9router/src/lib/billing/checkCredits.js",
+        "/Users/luisphan/Documents/9router/src/lib/db/repos/creditLedgerRepo.js",
+        "/Users/luisphan/Documents/9router/tests/unit/chat-plan-billing.test.js",
+        "/Users/luisphan/Documents/9router/tests/unit/usage-deduction-source.test.js"
+      ],
+      "at1": 0,
+      "at3": 0,
+      "at5": 1,
+      "rank": 5,
+      "durationMs": 5043,
+      "error": null
+    },
+    {
+      "query": "connections model provider endpoint configuration",
+      "expected": [
+        "connectionsRepo.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 3459,
+      "error": null
+    },
+    {
+      "query": "image generation handler request stream diffusion",
+      "expected": [
+        "imageGeneration.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 750,
+      "error": null
+    },
+    {
+      "query": "login rate limiter brute force protection attempts",
+      "expected": [
+        "loginLimiter.js"
+      ],
+      "files": [],
+      "at1": 0,
+      "at3": 0,
+      "at5": 0,
+      "rank": 0,
+      "durationMs": 816,
+      "error": null
+    }
+  ]
+}
